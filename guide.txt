@@ -1,0 +1,438 @@
+# Laravel Leave Application System
+
+## Installation Steps
+
+```bash
+# Create new Laravel project
+composer create-project laravel/laravel leave-system
+cd leave-system
+
+# Install dependencies
+composer install
+npm install
+
+# Setup environment
+cp .env.example .env
+php artisan key:generate
+
+# Configure database in .env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=leave_system
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Run migrations
+php artisan migrate
+php artisan serve
+```
+
+## Database Migration
+
+```php
+// database/migrations/2024_01_01_000001_create_employees_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('employees', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('division');
+            $table->string('designation');
+            $table->decimal('salary', 10, 2);
+            $table->decimal('balance_forwarded_vl', 5, 2)->default(0);
+            $table->decimal('balance_forwarded_sl', 5, 2)->default(0);
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('employees');
+    }
+};
+```
+
+```php
+// database/migrations/2024_01_01_000002_create_leave_applications_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('leave_applications', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('employee_id')->constrained();
+            $table->string('leave_type')->nullable();
+            $table->string('leave_details')->nullable();
+            $table->integer('working_days')->default(0);
+            $table->date('inclusive_date_start')->nullable();
+            $table->date('inclusive_date_end')->nullable();
+            $table->date('date_filed')->nullable();
+            $table->date('date_incurred')->nullable();
+            $table->string('commutation')->nullable();
+            $table->decimal('current_vl', 5, 2)->default(0);
+            $table->decimal('current_sl', 5, 2)->default(0);
+            $table->boolean('is_credit_earned')->default(false);
+            $table->date('earned_date')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('leave_applications');
+    }
+};
+```
+
+## Models
+
+```php
+// app/Models/Employee.php
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Employee extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name', 'division', 'designation', 'salary',
+        'balance_forwarded_vl', 'balance_forwarded_sl'
+    ];
+
+    public function leaveApplications()
+    {
+        return $this->hasMany(LeaveApplication::class);
+    }
+}
+```
+
+```php
+// app/Models/LeaveApplication.php
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class LeaveApplication extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'employee_id', 'leave_type', 'leave_details', 'working_days',
+        'inclusive_date_start', 'inclusive_date_end', 'date_filed',
+        'date_incurred', 'commutation', 'current_vl', 'current_sl',
+        'is_credit_earned', 'earned_date'
+    ];
+
+    protected $casts = [
+        'inclusive_date_start' => 'date',
+        'inclusive_date_end' => 'date',
+        'date_filed' => 'date',
+        'date_incurred' => 'date',
+        'earned_date' => 'date',
+        'is_credit_earned' => 'boolean',
+    ];
+
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class);
+    }
+}
+```
+
+## Controller
+
+```php
+// app/Http/Controllers/LeaveController.php
+<?php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Employee;
+use App\Models\LeaveApplication;
+
+class LeaveController extends Controller
+{
+    public function index(Request $request)
+    {
+        $employee = null;
+        $message = '';
+
+        if ($request->has('employee_id')) {
+            $employee = Employee::find($request->employee_id);
+        }
+
+        return view('leave.index', compact('employee', 'message'));
+    }
+
+    public function addEmployee(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'division' => 'required|string',
+            'designation' => 'required|string',
+            'salary' => 'required|numeric',
+        ]);
+
+        $employee = Employee::create($request->all());
+
+        return redirect()->route('leave.index')
+            ->with('success', '✅ Employee Added!');
+    }
+
+    public function findEmployee(Request $request)
+    {
+        $employee = Employee::where('name', $request->name)->first();
+
+        if ($employee) {
+            return redirect()->route('leave.index', ['employee_id' => $employee->id]);
+        }
+
+        return redirect()->route('leave.index')
+            ->with('error', '❌ Employee not found.');
+    }
+
+    public function submitLeave(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'leave_type' => 'required|string',
+            'working_days' => 'required|integer|min:1',
+            'date_filed' => 'required|date',
+            'date_incurred' => 'required|date',
+        ]);
+
+        LeaveApplication::create($request->all());
+
+        return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+            ->with('success', 'Application submitted successfully!');
+    }
+
+    public function addCreditsEarned(Request $request)
+    {
+        $employee = Employee::find($request->employee_id);
+        $lastApplication = $employee->leaveApplications()->latest()->first();
+        
+        $currentVL = $lastApplication ? $lastApplication->current_vl : $employee->balance_forwarded_vl;
+        $currentSL = $lastApplication ? $lastApplication->current_sl : $employee->balance_forwarded_sl;
+
+        LeaveApplication::create([
+            'employee_id' => $request->employee_id,
+            'current_vl' => $currentVL + 1.25,
+            'current_sl' => $currentSL + 1.25,
+            'is_credit_earned' => true,
+            'earned_date' => $request->earned_date,
+        ]);
+
+        return redirect()->route('leave.index', ['employee_id' => $request->employee_id]);
+    }
+
+    public function addLeaveRow(Request $request)
+    {
+        $employee = Employee::find($request->employee_id);
+        $lastApplication = $employee->leaveApplications()->latest()->first();
+        
+        $currentVL = $lastApplication ? $lastApplication->current_vl : $employee->balance_forwarded_vl;
+        $currentSL = $lastApplication ? $lastApplication->current_sl : $employee->balance_forwarded_sl;
+
+        $newVL = $currentVL;
+        $newSL = $currentSL;
+
+        if ($request->leave_type === 'VL') {
+            $newVL -= $request->working_days;
+        } elseif ($request->leave_type === 'SL') {
+            $newSL -= $request->working_days;
+        }
+
+        LeaveApplication::create([
+            'employee_id' => $request->employee_id,
+            'leave_type' => $request->leave_type,
+            'working_days' => $request->working_days,
+            'date_filed' => $request->leave_date_filed,
+            'date_incurred' => $request->leave_date_incurred,
+            'current_vl' => $newVL,
+            'current_sl' => $newSL,
+        ]);
+
+        return redirect()->route('leave.index', ['employee_id' => $request->employee_id]);
+    }
+}
+```
+
+## Routes
+
+```php
+// routes/web.php
+<?php
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LeaveController;
+
+Route::get('/', [LeaveController::class, 'index'])->name('leave.index');
+Route::post('/add-employee', [LeaveController::class, 'addEmployee'])->name('employee.add');
+Route::post('/find-employee', [LeaveController::class, 'findEmployee'])->name('employee.find');
+Route::post('/submit-leave', [LeaveController::class, 'submitLeave'])->name('leave.submit');
+Route::post('/add-credits', [LeaveController::class, 'addCreditsEarned'])->name('leave.credits');
+Route::post('/add-leave-row', [LeaveController::class, 'addLeaveRow'])->name('leave.row');
+```
+
+## View
+
+```blade
+{{-- resources/views/leave/index.blade.php --}}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Application for Leave</title>
+    <style>
+        .emp-form { margin: 15px 0; padding: 12px; background: #f9f9f9; border: 1px solid #ddd; width: 350px; }
+        .emp-form label { display: block; margin-top: 8px; }
+        .emp-form input, .emp-form select { width: 100%; padding: 4px 6px; margin-top: 2px; }
+        .emp-details { margin: 10px 0 15px 0; padding: 10px; background: #e7f7e7; border: 1px solid #b2d8b2; width: 350px; }
+        .leave-table { border-collapse: collapse; width: 100%; }
+        .leave-table th, .leave-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    @if(session('success'))
+        <div class="success">{{ session('success') }}</div>
+    @endif
+    
+    @if(session('error'))
+        <div class="error">{{ session('error') }}</div>
+    @endif
+
+    <!-- Employee Management -->
+    <form method="POST" action="{{ route('employee.find') }}">
+        @csrf
+        <div class="emp-form">
+            <label>Find Employee:</label>
+            <input type="text" name="name" required>
+            <button type="submit">Find Employee</button>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ route('employee.add') }}">
+        @csrf
+        <div class="emp-form">
+            <label>Name:</label>
+            <input type="text" name="name" required>
+            <label>Division:</label>
+            <input type="text" name="division" required>
+            <label>Designation:</label>
+            <input type="text" name="designation" required>
+            <label>Salary:</label>
+            <input type="number" step="0.01" name="salary" required>
+            <button type="submit">Add Employee</button>
+        </div>
+    </form>
+
+    @if($employee)
+        <div class="emp-details">
+            <b>Name:</b> {{ $employee->name }}<br>
+            <b>Division:</b> {{ $employee->division }}<br>
+            <b>Designation:</b> {{ $employee->designation }}<br>
+            <b>Salary:</b> {{ $employee->salary }}<br>
+        </div>
+
+        <!-- Leave Application Form -->
+        <form method="POST" action="{{ route('leave.submit') }}">
+            @csrf
+            <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+            <div class="emp-form">
+                <label>Leave Type:</label>
+                <select name="leave_type" required>
+                    <option value="VL">Vacation Leave</option>
+                    <option value="SL">Sick Leave</option>
+                    <option value="ML">Maternity Leave</option>
+                    <option value="PL">Paternity Leave</option>
+                </select>
+                <label>Working Days:</label>
+                <input type="number" name="working_days" required>
+                <label>Date Filed:</label>
+                <input type="date" name="date_filed" required>
+                <label>Date Incurred:</label>
+                <input type="date" name="date_incurred" required>
+                <button type="submit">Submit Leave</button>
+            </div>
+        </form>
+
+        <!-- Leave Records Table -->
+        <table class="leave-table">
+            <tr>
+                <th>Date</th>
+                <th>Leave Type</th>
+                <th>Days</th>
+                <th>Current VL</th>
+                <th>Current SL</th>
+            </tr>
+            <tr>
+                <td colspan="3"><b>Balance Forwarded</b></td>
+                <td>{{ number_format($employee->balance_forwarded_vl, 2) }}</td>
+                <td>{{ number_format($employee->balance_forwarded_sl, 2) }}</td>
+            </tr>
+            @foreach($employee->leaveApplications as $application)
+                <tr>
+                    <td>{{ $application->earned_date ?? $application->date_incurred }}</td>
+                    <td>{{ $application->is_credit_earned ? 'Credits Earned' : $application->leave_type }}</td>
+                    <td>{{ $application->working_days }}</td>
+                    <td>{{ number_format($application->current_vl, 2) }}</td>
+                    <td>{{ number_format($application->current_sl, 2) }}</td>
+                </tr>
+            @endforeach
+        </table>
+
+        <!-- Add Credits Form -->
+        <form method="POST" action="{{ route('leave.credits') }}">
+            @csrf
+            <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+            <div class="emp-form">
+                <label>Earned Date:</label>
+                <input type="date" name="earned_date" required>
+                <button type="submit">Add Credits Earned</button>
+            </div>
+        </form>
+    @endif
+</body>
+</html>
+```
+
+## Run Commands
+
+```bash
+# Create migration files
+php artisan make:migration create_employees_table
+php artisan make:migration create_leave_applications_table
+
+# Create models
+php artisan make:model Employee
+php artisan make:model LeaveApplication
+
+# Create controller
+php artisan make:controller LeaveController
+
+# Run migrations
+php artisan migrate
+
+# Start server
+php artisan serve
+```
