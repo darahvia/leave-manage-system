@@ -33,20 +33,22 @@ class LeaveController extends Controller
     public function addEmployee(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
+            'surname' => 'required|string',
+            'given_name' => 'required|string',
+            'middle_name' => 'required|string',
             'division' => 'required|string',
             'designation' => 'required|string',
             'salary' => 'required|numeric',
         ]);
 
-        $employeeData=request->al();
+        $employeeData = $request->all();
         $employeeData['vl'] = $employeeData['vl'] ?? 0;
         $employeeData['sl'] = $employeeData['sl'] ?? 0;
-        $employeeData['spl'] = $employeeData['spl'] ?? 3; // Usually 3 days per year
-        $employeeData['fl'] = $employeeData['fl'] ?? 5; // Usually 5 days per year
+        $employeeData['spl'] = $employeeData['spl'] ?? 3;
+        $employeeData['fl'] = $employeeData['fl'] ?? 5;
         $employeeData['solo_parent'] = $employeeData['solo_parent'] ?? 7;
-        $employeeData['ml'] = $employeeData['ml'] ?? 105; // 105 days for maternity
-        $employeeData['pl'] = $employeeData['pl'] ?? 7; // 7 days for paternity
+        $employeeData['ml'] = $employeeData['ml'] ?? 105;
+        $employeeData['pl'] = $employeeData['pl'] ?? 7;
         $employeeData['ra9710'] = $employeeData['ra9710'] ?? 0;
         $employeeData['rl'] = $employeeData['rl'] ?? 0;
         $employeeData['sel'] = $employeeData['sel'] ?? 0;
@@ -54,22 +56,25 @@ class LeaveController extends Controller
 
         $employee = Employee::create($employeeData);
 
-        return redirect()->route('employee.find', ['name' => $employee->name])
-            ->with('success', '✅ Employee Added!');
-
+        // Redirect using the new fields
+        return redirect()->route('employee.find', [
+            'surname' => $employee->surname,
+            'given_name' => $employee->given_name,
+            'middle_name' => $employee->middle_name,
+        ])->with('success', '✅ Employee Added!');
     }
 
     public function findEmployee(Request $request)
     {
-        $employee = Employee::where('name', $request->name)->first();
+        $employee = Employee::whereRaw("CONCAT(surname, ', ', given_name, ' ', middle_name) = ?", [$request->name])->first();
 
         if ($employee) {
             return redirect()->route('leave.index', ['employee_id' => $employee->id]);
         }
 
-        return redirect()->route('leave.index')
-            ->with('error', '❌ Employee not found.');
+        return redirect()->route('leave.index')->with('error', '❌ Employee not found.');
     }
+
 
         public function submitLeave(Request $request)
         {
@@ -160,29 +165,36 @@ class LeaveController extends Controller
 
     public function employeeAutocomplete(Request $request)
     {
-        // Clean any output that might have been sent before
         if (ob_get_level()) {
             ob_clean();
         }
-        
+
         $search = $request->get('query');
-        
+
         if (empty($search) || strlen($search) < 2) {
             return response()->json([]);
         }
-        
+
         try {
-            $results = Employee::where('name', 'LIKE', "%{$search}%")
+            $results = Employee::where(function ($query) use ($search) {
+                    $query->where('surname', 'LIKE', "%{$search}%")
+                        ->orWhere('given_name', 'LIKE', "%{$search}%")
+                        ->orWhere('middle_name', 'LIKE', "%{$search}%");
+                })
                 ->limit(10)
-                ->pluck('name')
-                ->values() // Reset array keys
+                ->get(['surname', 'given_name', 'middle_name', 'id'])
+                ->map(function ($employee) {
+                    return [
+                        'id' => $employee->id,
+                        'label' => trim("{$employee->surname}, {$employee->given_name} {$employee->middle_name}"),
+                    ];
+                })
+                ->values()
                 ->toArray();
-            
-            // Return JSON response with proper headers
+
             return response()->json($results, 200, [
                 'Content-Type' => 'application/json'
             ]);
-            
         } catch (\Exception $e) {
             return response()->json([], 500);
         }

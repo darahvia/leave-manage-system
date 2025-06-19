@@ -9,10 +9,23 @@ return new class extends Migration
     {
         Schema::create('employees', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('surname');
+            $table->string('given_name');
+            $table->string('middle_name');
             $table->string('division');
             $table->string('designation');
             $table->decimal('salary', 10, 2);
+            $table->integer('vl');
+            $table->integer('sl');
+            $table->integer('spl');
+            $table->integer('fl');
+            $table->integer('solo_parent');
+            $table->integer('ml');
+            $table->integer('pl');
+            $table->integer('ra9710');
+            $table->integer('rl');
+            $table->integer('sel');
+            $table->integer('study_leave');
             $table->decimal('balance_forwarded_vl', 5, 2)->default(0);
             $table->decimal('balance_forwarded_sl', 5, 2)->default(0);
             $table->timestamps();

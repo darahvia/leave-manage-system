@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Employee;
 use App\Models\LeaveApplication;
 
+
 class LeaveService
 {
     /**
@@ -36,7 +37,6 @@ class LeaveService
             'inclusive_date_start' => $leaveData['inclusive_date_start'] ?? null,
             'inclusive_date_end' => $leaveData['inclusive_date_end'] ?? null,
             'date_filed' => $leaveData['date_filed'],
-            'date_incurred' => $leaveData['date_incurred'],
             'commutation' => $leaveData['commutation'] ?? null,
             'current_vl' => $newBalances['vl'],
             'current_sl' => $newBalances['sl'],

@@ -38,8 +38,12 @@
             <form method="POST" action="{{ route('employee.add') }}">
                 @csrf
                 <div class="emp-form">
-                    <label>Name:</label>
-                    <input type="text" name="name" required>
+                    <label>Surname:</label>
+                    <input type="text" name="surname" required>
+                    <label>Given name:</label>
+                    <input type="text" name="given_name" required>
+                    <label>Middle name:</label>
+                    <input type="text" name="middle_name" required>
                     <label>Division:</label>
                     <input type="text" name="division" required>
                     <label>Designation:</label>
@@ -56,10 +60,13 @@
     <!-- Employee Details -->
     @if($employee)
         <div class="emp-details">
-            <b>Name:</b> {{ $employee->name }}<br>
+            <b>Surname:</b> {{ $employee->surname }}<br>
+            <b>Given name:</b> {{ $employee->given_name }}<br>
+            <b>Middle name:</b> {{ $employee->middle_name }}<br>
             <b>Division:</b> {{ $employee->division }}<br>
             <b>Designation:</b> {{ $employee->designation }}<br>
             <b>Salary:</b> {{ $employee->salary }}<br>
+            
         </div>
     @endif
 
@@ -305,9 +312,10 @@ $(function() {
                     
                     let suggestions = '';
                     if (data && data.length > 0) {
-                        data.forEach(function(name) {
-                            suggestions += '<div class="suggestion-item" style="padding:8px;cursor:pointer;border-bottom:1px solid #eee;">' + name + '</div>';
-                        });
+                    data.forEach(function(item) {
+                        suggestions += '<div class="suggestion-item" data-id="' + item.id + '">' + item.label + '</div>';
+                    });
+
                         $('#suggestions').html(suggestions).show();
                     } else {
                         $('#suggestions').hide();
