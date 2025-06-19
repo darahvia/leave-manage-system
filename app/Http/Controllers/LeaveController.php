@@ -2,7 +2,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Employee; // <-- Add this line
+use App\Models\Employee; 
 use App\Models\LeaveApplication; 
 
 class LeaveController extends Controller
@@ -31,8 +31,9 @@ class LeaveController extends Controller
 
         $employee = Employee::create($request->all());
 
-        return redirect()->route('leave.index')
+        return redirect()->route('employee.find', ['name' => $employee->name])
             ->with('success', '✅ Employee Added!');
+
     }
 
     public function findEmployee(Request $request)

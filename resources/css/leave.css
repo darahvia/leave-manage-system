@@ -1,0 +1,311 @@
+/* Base styles */
+body {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    background: #f4f6fa;
+    color: #222;
+    margin: 0;
+}
+
+h1, h2, h3, h4 {
+    color: #1a397b;
+    font-weight: 600;
+    margin-bottom: 0.5em;
+}
+
+a {
+    color: #1a397b;
+    text-decoration: none;
+}
+
+a:hover, a:focus {
+    text-decoration: underline;
+}
+
+.success {
+    background: #e6f4ea;
+    color: #217a3c;
+    border-left: 4px solid #217a3c;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+
+.error {
+    background: #fbeaea;
+    color: #a12a2a;
+    border-left: 4px solid #a12a2a;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+
+/* Top section */
+.top-section {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 24px 32px 0 32px;
+    background: #fff;
+    border-bottom: 1px solid #dbe2ea;
+}
+
+/* add credits earned and leave form*/
+.bottom-section {
+    display: flex;
+    margin-top: 24px;
+    gap: 16px;
+}
+
+.leave-form{
+    display:flex;
+    flex:1;
+}
+
+
+.emp-form {
+    background: #f8fafc;
+    border: 1px solid #dbe2ea;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 4px rgba(26,57,123,0.03);
+}
+
+.emp-form label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #1a397b;
+}
+
+.emp-form input,
+.emp-form select {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    border: 1px solid #bfc9d9;
+    border-radius: 4px;
+    font-size: 1em;
+    background: #fff;
+    transition: border-color 0.2s;
+}
+
+.emp-form input:focus,
+.emp-form select:focus {
+    border-color: #1a397b;
+    outline: none;
+}
+
+.emp-form button {
+    background: #1a397b;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 9px 18px;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.emp-form button:hover,
+.emp-form button:focus {
+    background: #17407c;
+}
+
+
+
+.icon-btn {
+    background: #1a397b;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(26,57,123,0.08);
+    transition: background 0.2s;
+}
+
+.icon-btn:hover,
+.icon-btn:focus {
+    background: #17407c;
+}
+
+/* Modal styles */
+.modal-bg {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(26,57,123,0.12);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-bg.active { display: flex; }
+
+.modal-content {
+    background: #fff;
+    padding: 32px 36px 28px 36px;
+    border-radius: 8px;
+    min-width: 340px;
+    box-shadow: 0 4px 32px rgba(26,57,123,0.12);
+    position: relative;
+}
+
+.modal-content button.close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: #888;
+    cursor: pointer;
+}
+
+/* Employee details */
+.emp-details {
+    background: #eaf0fa;
+    border: 1px solid #bfc9d9;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 24px 0 18px 0;
+    font-size: 1.08em;
+    box-shadow: 0 1px 4px rgba(26,57,123,0.03);
+}
+
+/* Table styles */
+.leave-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(26,57,123,0.04);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.leave-table th, .leave-table td {
+    border: 1px solid #dbe2ea;
+    padding: 10px 8px;
+    text-align: left;
+    font-size: 0.98em;
+}
+
+.leave-table th {
+    background: #eaf0fa;
+    color: #1a397b;
+    font-weight: 600;
+}
+
+.leave-table tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+.leave-table tr:hover {
+    background: #e6eefa;
+}
+
+.leave-table td {
+    color: #222;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .top-section, .main-container, .emp-details, .leave-table {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    .modal-content {
+        min-width: 90vw;
+    }
+}
+
+@media (max-width: 600px) {
+    .leave-table, .leave-table thead, .leave-table tbody, .leave-table th, .leave-table td, .leave-table tr {
+        display: block;
+    }
+    .leave-table tr {
+        margin-bottom: 12px;
+    }
+    .leave-table td, .leave-table th {
+        padding: 8px 6px;
+        border: none;
+        border-bottom: 1px solid #dbe2ea;
+    }
+    .leave-table th {
+        background: #eaf0fa;
+    }
+}
+
+/* Top section layout */
+.top-section {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+
+
+.search-form input[type="text"] {
+    width: 180px;
+    padding: 7px 10px;
+    border: 1px solid #bfc9d9;
+    border-radius: 4px;
+    font-size: 1em;
+    background: #fff;
+    transition: border-color 0.2s;
+}
+
+.search-form input[type="text"]:focus {
+    border-color: #1a397b;
+    outline: none;
+}
+
+.search-btn {
+    background: #1a397b;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 7px 18px;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.search-btn:hover,
+.search-btn:focus {
+    background: #17407c;
+}
+
+/* Square add icon button */
+.icon-btn-square {
+    background: #1a397b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    margin-left: 8px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(26,57,123,0.08);
+    transition: background 0.2s;
+}
+
+.icon-btn-square:hover,
+.icon-btn-square:focus {
+    background: #17407c;
+}
