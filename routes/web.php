@@ -1,5 +1,5 @@
-// routes/web.php
 <?php
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LeaveController;
 
@@ -10,6 +10,5 @@ Route::post('/submit-leave', [LeaveController::class, 'submitLeave'])->name('lea
 Route::post('/add-credits', [LeaveController::class, 'addCreditsEarned'])->name('leave.credits');
 Route::post('/add-leave-row', [LeaveController::class, 'addLeaveRow'])->name('leave.row');
 
-// /add-leave-row - url path the rounte is responing to
-// LeaveController::class, 'addLeaveRow' - controller and method to handle the request
-// leave.row - name of the route, used for generating URLs in views
+// Make sure this route is GET method only and comes before any catch-all routes
+Route::get('/employee-autocomplete', [LeaveController::class, 'employeeAutocomplete'])->name('employee.autocomplete');

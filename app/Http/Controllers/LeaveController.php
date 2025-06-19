@@ -113,4 +113,34 @@ class LeaveController extends Controller
         return redirect()->route('leave.index', ['employee_id' => $request->employee_id]);
     }
 
+public function employeeAutocomplete(Request $request)
+{
+    // Clean any output that might have been sent before
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    
+    $search = $request->get('query');
+    
+    if (empty($search) || strlen($search) < 2) {
+        return response()->json([]);
+    }
+    
+    try {
+        $results = Employee::where('name', 'LIKE', "%{$search}%")
+            ->limit(10)
+            ->pluck('name')
+            ->values() // Reset array keys
+            ->toArray();
+        
+        // Return JSON response with proper headers
+        return response()->json($results, 200, [
+            'Content-Type' => 'application/json'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([], 500);
+    }
+}
+
 }
