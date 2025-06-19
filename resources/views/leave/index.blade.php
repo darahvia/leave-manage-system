@@ -50,6 +50,10 @@
                     <input type="text" name="designation" required>
                     <label>Salary:</label>
                     <input type="number" step="0.01" name="salary" required>
+                    <label>Vacation Leave Forwarded Balance:</label>
+                    <input type="number" step="0.01" name="balance_forwarded_vl" required>
+                    <label>Sick Leave Forwarded Balance:</label>
+                    <input type="number" step="0.01" name="balance_forwarded_sl" required>
                     <button type="submit">Add Employee</button>
                 </div>
             </form>

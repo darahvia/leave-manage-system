@@ -39,13 +39,15 @@ class LeaveController extends Controller
             'division' => 'required|string',
             'designation' => 'required|string',
             'salary' => 'required|numeric',
+            'balance_forwarded_vl' => 'nullable|numeric',
+            'balance_forwarded_sl' => 'nullable|numeric',
         ]);
 
         $employeeData = $request->all();
         $employeeData['vl'] = $employeeData['vl'] ?? 0;
         $employeeData['sl'] = $employeeData['sl'] ?? 0;
         $employeeData['spl'] = $employeeData['spl'] ?? 3;
-        $employeeData['fl'] = $employeeData['fl'] ?? 5;
+        $employeeData['fl'] = $employeeData['fl'] ?? 0;
         $employeeData['solo_parent'] = $employeeData['solo_parent'] ?? 7;
         $employeeData['ml'] = $employeeData['ml'] ?? 105;
         $employeeData['pl'] = $employeeData['pl'] ?? 7;
@@ -64,17 +66,22 @@ class LeaveController extends Controller
         ])->with('success', '✅ Employee Added!');
     }
 
-    public function findEmployee(Request $request)
-    {
-        $employee = Employee::whereRaw("CONCAT(surname, ', ', given_name, ' ', middle_name) = ?", [$request->name])->first();
 
-        if ($employee) {
-            return redirect()->route('leave.index', ['employee_id' => $employee->id]);
-        }
+        public function findEmployee(Request $request)
+        {
+            $employee = Employee::where('surname', $request->surname)
+                ->where('given_name', $request->given_name)
+                ->where('middle_name', $request->middle_name)
+                ->first();
 
-        return redirect()->route('leave.index')->with('error', '❌ Employee not found.');
-    }
+            if ($employee) {
+                return redirect()->route('leave.index', ['employee_id' => $employee->id])
+                    ->with('success', '✅ Employee Added!');
+            }
 
+            return redirect()->route('leave.index')
+                ->with('error', '❌ Employee not found.');
+}
 
         public function submitLeave(Request $request)
         {
