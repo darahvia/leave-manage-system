@@ -4,6 +4,7 @@
 <head>
     <title>Application for Leave</title>
     @vite(['resources/css/leave.css'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
     @if(session('success'))
@@ -16,11 +17,12 @@
 
     <!-- Top: Search and Add Employee Icon -->
     <div class="top-section">
-        <form method="POST" action="{{ route('employee.find') }}" class="search-form">
+        <form method="POST" action="{{ route('employee.find') }}" class="search-form" autocomplete="off">
             @csrf
             <div class="emp-form">
-                <label>Find Employee:</label>
-                <input type="text" name="name" required>
+                <label for="employee-search">Find Employee:</label>
+                <input type="text" name="name" id="employee-search" autocomplete="off" required>
+                <div id="suggestions"></div>
                 <button type="submit" class="search-btn">Search</button>
             </div>
         </form>
@@ -28,7 +30,6 @@
             &#43; <!-- plus icon -->
         </button>
     </div>
-
 
     <!-- Add Employee Modal -->
     <div class="modal-bg" id="addEmpModal">
@@ -274,5 +275,68 @@
         document.getElementById('inclusive_date_start').addEventListener('change', calculateWorkingDays);
         document.getElementById('inclusive_date_end').addEventListener('change', calculateWorkingDays);
     </script>
+    
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+$(function() {
+
+    $('#employee-search').on('input', function() {
+        console.log('Input event fired');
+        let query = $(this).val();
+        
+        if (query.length < 2) {
+            $('#suggestions').hide();
+            return;
+        }
+        
+        $.ajax({
+            url: '{{ route("employee.autocomplete") }}',
+            method: 'GET',
+            data: { query: query },
+            dataType: 'text', // Change to text first to see raw response
+            success: function(response) {
+                console.log('Raw response:', response);
+                
+                try {
+                    // Try to parse JSON manually
+                    let data = JSON.parse(response);
+                    console.log('Parsed data:', data);
+                    
+                    let suggestions = '';
+                    if (data && data.length > 0) {
+                        data.forEach(function(name) {
+                            suggestions += '<div class="suggestion-item" style="padding:8px;cursor:pointer;border-bottom:1px solid #eee;">' + name + '</div>';
+                        });
+                        $('#suggestions').html(suggestions).show();
+                    } else {
+                        $('#suggestions').hide();
+                    }
+                } catch (e) {
+                    console.error('JSON Parse Error:', e);
+                    console.error('Response was:', response);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                console.error('Status:', status);
+                console.error('Response Text:', xhr.responseText);
+                console.error('Status Code:', xhr.status);
+            }
+        });
+    });
+
+    $(document).on('click', '.suggestion-item', function() {
+        $('#employee-search').val($(this).text());
+        $('#suggestions').hide();
+    });
+
+    $(document).click(function(e) {
+        if (!$(e.target).closest('#employee-search, #suggestions').length) {
+            $('#suggestions').hide();
+        }
+    });
+});
+</script>
 </body>
 </html>
