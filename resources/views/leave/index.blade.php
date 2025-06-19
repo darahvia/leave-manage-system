@@ -14,6 +14,7 @@
         <div class="error">{{ session('error') }}</div>
     @endif
 
+
     <!-- Top: Search and Add Employee Icon -->
     <div class="top-section">
         <form method="POST" action="{{ route('employee.find') }}" class="search-form" autocomplete="off">
@@ -30,8 +31,6 @@
         </button>
     </div>
 
-    
-    
     <!-- Add Employee Modal -->
     <div class="modal-bg" id="addEmpModal">
         <div class="modal-content">
@@ -53,6 +52,7 @@
         </div>
     </div>
 
+
     <!-- Employee Details -->
     @if($employee)
         <div class="emp-details">
@@ -62,6 +62,7 @@
             <b>Salary:</b> {{ $employee->salary }}<br>
         </div>
     @endif
+
 
     <!-- Leave Records Table -->
     @if($employee)
@@ -123,7 +124,13 @@
                                 @endif
                             </td>
                             <td>{{ $app->date_filed ? \Carbon\Carbon::parse($app->date_filed)->format('F j, Y') : '' }}</td>
-                            <td>{{ $app->date_incurred ? \Carbon\Carbon::parse($app->date_incurred)->format('F j, Y') : '' }}</td>
+                            <td>
+                                @if($app->inclusive_date_start && $app->inclusive_date_end)
+                                    {{ \Carbon\Carbon::parse($app->inclusive_date_start)->format('F j, Y') }} - {{ \Carbon\Carbon::parse($app->inclusive_date_end)->format('F j, Y') }}
+                                @elseif($app->date_incurred)
+                                    {{ \Carbon\Carbon::parse($app->date_incurred)->format('F j, Y') }}
+                                @endif
+                            </td>
                             <td>
                                 @if(!$app->is_credit_earned)
                                     {{ $app->leave_type ?? '' }}
@@ -169,6 +176,7 @@
         </table>
     @endif
 
+
     <!-- Bottom: Add Leave Type and Add Earned Credits -->
     @if($employee)
         <div class="bottom-section">
@@ -188,12 +196,14 @@
                         <option value="SOLO PARENT">Solo Parent</option>
                         <option value="OTHERS">Others</option>
                     </select>
-                    <label>Working Days:</label>
-                    <input type="number" name="working_days" required>
                     <label>Date Filed:</label>
                     <input type="date" name="date_filed" required>
-                    <label>Date Incurred:</label>
-                    <input type="date" name="date_incurred" required>
+                    <label>Leave Start Date (Inclusive):</label>
+                    <input type="date" name="inclusive_date_start" id="inclusive_date_start" required>
+                    <label>Leave End Date (Inclusive):</label>
+                    <input type="date" name="inclusive_date_end" id="inclusive_date_end" required>
+                    <label>Working Days:</label>
+                    <input type="number" name="working_days" id="working_days" readonly style="background-color: #f5f5f5;">
                     <button type="submit">Add Leave</button>
                 </div>
             </form>
@@ -210,6 +220,7 @@
         </div>
     @endif
 
+
     <script>
         // Modal logic for Add Employee
         document.getElementById('showAddEmpModal').onclick = function() {
@@ -222,6 +233,47 @@
         document.getElementById('addEmpModal').onclick = function(e) {
             if (e.target === this) this.classList.remove('active');
         };
+
+
+        // Calculate working days automatically
+        function calculateWorkingDays() {
+            const startDate = document.getElementById('inclusive_date_start').value;
+            const endDate = document.getElementById('inclusive_date_end').value;
+           
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+               
+                // Validate that end date is not before start date
+                if (end < start) {
+                    document.getElementById('working_days').value = 0;
+                    return;
+                }
+               
+                let workingDays = 0;
+                let currentDate = new Date(start);
+               
+                // Loop through each day in the range (inclusive)
+                while (currentDate <= end) {
+                    const dayOfWeek = currentDate.getDay();
+                    // Count weekdays only (Monday = 1, Friday = 5)
+                    // Sunday = 0, Saturday = 6 are excluded
+                    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                        workingDays++;
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+               
+                document.getElementById('working_days').value = workingDays;
+            } else {
+                document.getElementById('working_days').value = '';
+            }
+        }
+
+
+        // Add event listeners to date inputs
+        document.getElementById('inclusive_date_start').addEventListener('change', calculateWorkingDays);
+        document.getElementById('inclusive_date_end').addEventListener('change', calculateWorkingDays);
     </script>
     
     

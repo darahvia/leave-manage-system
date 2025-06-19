@@ -4,20 +4,29 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Employee; 
 use App\Models\LeaveApplication; 
+use App\Services\LeaveService;
+
 
 class LeaveController extends Controller
 {
-    //{
+    protected $leaveService;
+    
+    public function __construct(LeaveService $leaveService)
+    {
+        $this->leaveService = $leaveService;
+    }
+
     public function index(Request $request)
     {
         $employee = null;
+        $leaveTypes = LeaveService::getLeaveTypes();
         $message = '';
 
         if ($request->has('employee_id')) {
             $employee = Employee::find($request->employee_id);
         }
 
-        return view('leave.index', compact('employee', 'message'));
+        return view('leave.index', compact('employee', 'leaveTypes'));
     }
 
     public function addEmployee(Request $request)
@@ -29,7 +38,20 @@ class LeaveController extends Controller
             'salary' => 'required|numeric',
         ]);
 
-        $employee = Employee::create($request->all());
+        $employeeData=request->al();
+        $employeeData['vl'] = $employeeData['vl'] ?? 0;
+        $employeeData['sl'] = $employeeData['sl'] ?? 0;
+        $employeeData['spl'] = $employeeData['spl'] ?? 3; // Usually 3 days per year
+        $employeeData['fl'] = $employeeData['fl'] ?? 5; // Usually 5 days per year
+        $employeeData['solo_parent'] = $employeeData['solo_parent'] ?? 7;
+        $employeeData['ml'] = $employeeData['ml'] ?? 105; // 105 days for maternity
+        $employeeData['pl'] = $employeeData['pl'] ?? 7; // 7 days for paternity
+        $employeeData['ra9710'] = $employeeData['ra9710'] ?? 0;
+        $employeeData['rl'] = $employeeData['rl'] ?? 0;
+        $employeeData['sel'] = $employeeData['sel'] ?? 0;
+        $employeeData['study_leave'] = $employeeData['study_leave'] ?? 0;
+
+        $employee = Employee::create($employeeData);
 
         return redirect()->route('employee.find', ['name' => $employee->name])
             ->with('success', '✅ Employee Added!');
@@ -58,59 +80,68 @@ class LeaveController extends Controller
             'date_incurred' => 'required|date',
         ]);
 
-        LeaveApplication::create($request->all());
+        try {
+            $employee = Employee::find($request->employee_id);
+            
+            $leaveApplication = $this->leaveService->processLeaveApplication(
+                $employee,
+                $request->all()
+            );
 
-        return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
-            ->with('success', 'Application submitted successfully!');
+            $leaveTypeName = LeaveService::getLeaveTypes()[$request->leave_type] ?? $request->leave_type;
+            
+            return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                ->with('success', "✅ {$leaveTypeName} application submitted successfully!");
+
+        } catch (\Exception $e) {
+            return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                ->with('error', '❌ ' . $e->getMessage());
+        }
     }
+
 
     public function addCreditsEarned(Request $request)
     {
-        $employee = Employee::find($request->employee_id);
-        $lastApplication = $employee->leaveApplications()->latest()->first();
-        
-        $currentVL = $lastApplication ? $lastApplication->current_vl : $employee->balance_forwarded_vl;
-        $currentSL = $lastApplication ? $lastApplication->current_sl : $employee->balance_forwarded_sl;
-
-        LeaveApplication::create([
-            'employee_id' => $request->employee_id,
-            'current_vl' => $currentVL + 1.25,
-            'current_sl' => $currentSL + 1.25,
-            'is_credit_earned' => true,
-            'earned_date' => $request->earned_date,
+        $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'earned_date' => 'required|date',
         ]);
 
-        return redirect()->route('leave.index', ['employee_id' => $request->employee_id]);
+        try {
+            $employee = Employee::find($request->employee_id);
+            
+            $this->leaveService->addCreditsEarned(
+                $employee,
+                $request->earned_date,
+                1.25, // VL credits
+                1.25  // SL credits
+            );
+
+            return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                ->with('success', '✅ Leave credits added successfully!');
+
+        } catch (\Exception $e) {
+            return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                ->with('error', '❌ ' . $e->getMessage());
+        }
     }
 
-    public function addLeaveRow(Request $request)
+    public function getEmployeeLeaveBalances($employeeId)
     {
-        $employee = Employee::find($request->employee_id);
-        $lastApplication = $employee->leaveApplications()->latest()->first();
+        $employee = Employee::find($employeeId);
         
-        $currentVL = $lastApplication ? $lastApplication->current_vl : $employee->balance_forwarded_vl;
-        $currentSL = $lastApplication ? $lastApplication->current_sl : $employee->balance_forwarded_sl;
-
-        $newVL = $currentVL;
-        $newSL = $currentSL;
-
-        if ($request->leave_type === 'VL') {
-            $newVL -= $request->working_days;
-        } elseif ($request->leave_type === 'SL') {
-            $newSL -= $request->working_days;
+        if (!$employee) {
+            return response()->json(['error' => 'Employee not found'], 404);
         }
 
-        LeaveApplication::create([
-            'employee_id' => $request->employee_id,
-            'leave_type' => $request->leave_type,
-            'working_days' => $request->working_days,
-            'date_filed' => $request->leave_date_filed,
-            'date_incurred' => $request->leave_date_incurred,
-            'current_vl' => $newVL,
-            'current_sl' => $newSL,
-        ]);
+        $balances = [];
+        $leaveTypes = ['vl', 'sl', 'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave'];
+        
+        foreach ($leaveTypes as $type) {
+            $balances[$type] = $employee->getCurrentLeaveBalance($type);
+        }
 
-        return redirect()->route('leave.index', ['employee_id' => $request->employee_id]);
+        return response()->json($balances);
     }
 
 public function employeeAutocomplete(Request $request)
@@ -142,5 +173,6 @@ public function employeeAutocomplete(Request $request)
         return response()->json([], 500);
     }
 }
+
 
 }
