@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use App\Models\Employee; 
 use App\Models\LeaveApplication; 
 use App\Services\LeaveService;
+use Carbon\Carbon;
 
 
 class LeaveController extends Controller
@@ -70,35 +71,48 @@ class LeaveController extends Controller
             ->with('error', '❌ Employee not found.');
     }
 
-    public function submitLeave(Request $request)
-    {
-        $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'leave_type' => 'required|string',
-            'working_days' => 'required|integer|min:1',
-            'date_filed' => 'required|date',
-            'date_incurred' => 'required|date',
-        ]);
+        public function submitLeave(Request $request)
+        {
+            $request->validate([
+                'employee_id' => 'required|exists:employees,id',
+                'leave_type' => 'required|string',
+                'working_days' => 'required|integer|min:1',
+                'date_filed' => 'required|date',
+                'inclusive_date_start' => 'required|date',
+                'inclusive_date_end' => 'required|date|after_or_equal:inclusive_date_start',
+            ]);
 
-        try {
-            $employee = Employee::find($request->employee_id);
-            
-            $leaveApplication = $this->leaveService->processLeaveApplication(
-                $employee,
-                $request->all()
-            );
 
-            $leaveTypeName = LeaveService::getLeaveTypes()[$request->leave_type] ?? $request->leave_type;
-            
-            return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
-                ->with('success', "✅ {$leaveTypeName} application submitted successfully!");
+            // Calculate working days on the backend for validation
+            $startDate = Carbon::parse($request->inclusive_date_start);
+            $endDate = Carbon::parse($request->inclusive_date_end);
+            $calculatedWorkingDays = $this->calculateWorkingDays($startDate, $endDate);
 
-        } catch (\Exception $e) {
-            return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
-                ->with('error', '❌ ' . $e->getMessage());
+            // Verify the submitted working days match the calculated ones
+            if ($request->working_days != $calculatedWorkingDays) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Working days calculation mismatch. Expected: ' . $calculatedWorkingDays);
+            }
+
+            try {
+                $employee = Employee::find($request->employee_id);
+                
+                $leaveApplication = $this->leaveService->processLeaveApplication(
+                    $employee,
+                    $request->all()
+                );
+
+                $leaveTypeName = LeaveService::getLeaveTypes()[$request->leave_type] ?? $request->leave_type;
+                
+                return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                    ->with('success', "✅ {$leaveTypeName} application submitted successfully!");
+
+            } catch (\Exception $e) {
+                return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                    ->with('error', '❌ ' . $e->getMessage());
+            }
         }
-    }
-
 
     public function addCreditsEarned(Request $request)
     {
@@ -144,35 +158,50 @@ class LeaveController extends Controller
         return response()->json($balances);
     }
 
-public function employeeAutocomplete(Request $request)
-{
-    // Clean any output that might have been sent before
-    if (ob_get_level()) {
-        ob_clean();
-    }
-    
-    $search = $request->get('query');
-    
-    if (empty($search) || strlen($search) < 2) {
-        return response()->json([]);
-    }
-    
-    try {
-        $results = Employee::where('name', 'LIKE', "%{$search}%")
-            ->limit(10)
-            ->pluck('name')
-            ->values() // Reset array keys
-            ->toArray();
+    public function employeeAutocomplete(Request $request)
+    {
+        // Clean any output that might have been sent before
+        if (ob_get_level()) {
+            ob_clean();
+        }
         
-        // Return JSON response with proper headers
-        return response()->json($results, 200, [
-            'Content-Type' => 'application/json'
-        ]);
+        $search = $request->get('query');
         
-    } catch (\Exception $e) {
-        return response()->json([], 500);
+        if (empty($search) || strlen($search) < 2) {
+            return response()->json([]);
+        }
+        
+        try {
+            $results = Employee::where('name', 'LIKE', "%{$search}%")
+                ->limit(10)
+                ->pluck('name')
+                ->values() // Reset array keys
+                ->toArray();
+            
+            // Return JSON response with proper headers
+            return response()->json($results, 200, [
+                'Content-Type' => 'application/json'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([], 500);
+        }
     }
-}
 
+    private function calculateWorkingDays(Carbon $startDate, Carbon $endDate)
+    {
+        $workingDays = 0;
+        $currentDate = $startDate->copy();
+
+
+        while ($currentDate <= $endDate) {
+            // Check if it's a weekday (Monday = 1, Sunday = 0)
+            if ($currentDate->dayOfWeek >= 1 && $currentDate->dayOfWeek <= 5) {
+                $workingDays++;
+            }
+            $currentDate->addDay();
+        }
+        return $workingDays;
+    }
 
 }
