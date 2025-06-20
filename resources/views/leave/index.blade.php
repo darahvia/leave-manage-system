@@ -48,6 +48,8 @@
                     <input type="text" name="division" required>
                     <label>Designation:</label>
                     <input type="text" name="designation" required>
+                    <label>Original Appointment:</label>
+                    <input type="text" name="original_appointment">
                     <label>Salary:</label>
                     <input type="number" step="0.01" name="salary" required>
                     <label>Vacation Leave Forwarded Balance:</label>
@@ -61,16 +63,41 @@
     </div>
 
 
-    <!-- Employee Details -->
+    <!-- Employee Details Table -->
     @if($employee)
-        <div class="emp-details">
-            <b>Surname:</b> {{ $employee->surname }}<br>
-            <b>Given name:</b> {{ $employee->given_name }}<br>
-            <b>Middle name:</b> {{ $employee->middle_name }}<br>
-            <b>Division:</b> {{ $employee->division }}<br>
-            <b>Designation:</b> {{ $employee->designation }}<br>
-            <b>Salary:</b> {{ $employee->salary }}<br>
-            
+        <div class="emp-details-table">
+            <table class="employee-info-table">
+                <tr>
+                    <td class="label">SURNAME</td>
+                    <td class="value">{{ strtoupper($employee->surname) }}</td>
+                    <td class="label">DIVISION</td>
+                    <td class="value">{{ strtoupper($employee->division) }}</td>
+                    <td class="label">BASIC SALARY</td>
+                    <td class="value">{{ number_format($employee->salary, 2) }}</td>
+                    <td class="label"></td>
+                    <td class="value"></td>
+                </tr>
+                <tr>
+                    <td class="label">GIVEN NAME</td>
+                    <td class="value">{{ strtoupper($employee->given_name) }}</td>
+                    <td class="label">DESIGNATION</td>
+                    <td class="value">{{ strtoupper($employee->designation) }}</td>
+                    <td class="label">FORCED LEAVE BALANCE</td>
+                    <td class="value">{{ $employee->fl ?? 0 }}</td>
+                    <td class="label"></td>
+                    <td class="value"></td>
+                </tr>
+                <tr>
+                    <td class="label">MIDDLE NAME</td>
+                    <td class="value">{{ strtoupper($employee->middle_name) }}</td>
+                    <td class="label">ORIGINAL APPOINTMENT</td>
+                    <td class="value">{{ $employee->original_appointment ?? '' }}</td>
+                    <td class="label">SPECIAL PRIVILEGE LEAVE BALANCE</td>
+                    <td class="value">{{ $employee->spl ?? 0 }}</td>
+                    <td class="label"></td>
+                    <td class="value"></td>
+                </tr>
+            </table>
         </div>
     @endif
 

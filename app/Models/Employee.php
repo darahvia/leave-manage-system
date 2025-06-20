@@ -12,7 +12,8 @@ class Employee extends Model
         'surname', 'given_name', 'middle_name', 'division', 'designation', 'salary', 
         'vl', 'sl', 'spl', 'fl', 'solo_parent', 'ml', 'pl',
         'ra9710', 'rl', 'sel', 'study_leave',
-        'balance_forwarded_vl', 'balance_forwarded_sl'
+        'balance_forwarded_vl', 'balance_forwarded_sl',
+        'original_appointment' // Added this field
     ];
 
     public function leaveApplications()

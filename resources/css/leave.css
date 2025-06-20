@@ -349,3 +349,87 @@ a:hover, a:focus {
 .search-form .emp-form {
     position: relative;
 }
+
+/* Employee Details Table */
+.emp-details-table {
+    margin: 24px 0 18px 0;
+    box-shadow: 0 1px 4px rgba(26,57,123,0.03);
+}
+
+.employee-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.employee-info-table td {
+    border: 1px solid #dbe2ea;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    height: 25px;
+    vertical-align: middle;
+}
+
+.employee-info-table .label {
+    background: #eaf0fa;
+    color: #1a397b;
+    font-weight: 600;
+    text-align: left;
+    width: 12%;
+    font-size: 0.85em;
+}
+
+.employee-info-table .value {
+    background: #fff;
+    color: #222;
+    text-align: left;
+    font-weight: 500;
+}
+
+/* Make table responsive */
+@media (max-width: 900px) {
+    .emp-details-table {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .employee-info-table .label {
+        font-size: 0.8em;
+        width: 15%;
+    }
+    
+    .employee-info-table td {
+        padding: 6px 8px;
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 600px) {
+    .employee-info-table, 
+    .employee-info-table tbody, 
+    .employee-info-table tr, 
+    .employee-info-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    .employee-info-table tr {
+        margin-bottom: 10px;
+        border: 1px solid #dbe2ea;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .employee-info-table .label {
+        width: 100%;
+        border-bottom: none;
+    }
+    
+    .employee-info-table .value {
+        width: 100%;
+        border-top: none;
+        margin-bottom: 8px;
+    }
+}
