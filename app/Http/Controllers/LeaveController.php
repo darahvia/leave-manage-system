@@ -77,6 +77,47 @@ class LeaveController extends Controller
                 ->with('error', '❌ Employee not found.');
         }
 
+        public function updateLeave(Request $request)
+        {
+            try {
+                $request->validate([
+                    'edit_id' => 'required|integer',
+                    'employee_id' => 'required|integer',
+                    'leave_type' => 'required|string',
+                    'date_filed' => 'required|date',
+                    'inclusive_date_start' => 'required|date',
+                    'inclusive_date_end' => 'required|date',
+                    'working_days' => 'required|numeric',
+                ]);
+
+                // Find the leave application to update
+                $leaveApplication = LeaveApplication::findOrFail($request->edit_id);
+                
+                // Verify that this leave application belongs to the specified employee
+                if ($leaveApplication->employee_id != $request->employee_id) {
+                    return back()->with('error', 'Unauthorized access to leave application.');
+                }
+
+                // Update the leave application
+                $leaveApplication->update([
+                    'leave_type' => $request->leave_type,
+                    'date_filed' => $request->date_filed,
+                    'inclusive_date_start' => $request->inclusive_date_start,
+                    'inclusive_date_end' => $request->inclusive_date_end,
+                    'working_days' => $request->working_days,
+                ]);
+
+                // You might want to recalculate balances here if needed
+                // $this->leaveService->recalculateBalances($request->employee_id);
+
+                return back()->with('success', 'Leave application updated successfully.');
+                
+            } catch (ValidationException $e) {
+                return back()->withErrors($e->errors())->withInput();
+            } catch (\Exception $e) {
+                return back()->with('error', 'An error occurred while updating the leave application: ' . $e->getMessage());
+            }
+        }
         public function deleteLeave(Request $request)
         {
             try {
@@ -142,31 +183,37 @@ class LeaveController extends Controller
             }
         }
 
-    public function addCreditsEarned(Request $request)
-    {
-        $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'earned_date' => 'required|date',
-        ]);
+        public function addOtherCreditsEarned(Request $request)
+        {
+            $request->validate([
+                'employee_id' => 'required|exists:employees,id',
+                'leave_type' => 'required|string',
+                'credits' => 'required|numeric|min:0',
+            ]);
 
-        try {
-            $employee = Employee::find($request->employee_id);
-            
-            $this->leaveService->addCreditsEarned(
-                $employee,
-                $request->earned_date,
-                1.25, // VL credits
-                1.25  // SL credits
-            );
+            try {
+                $employee = Employee::findOrFail($request->employee_id);
+                $leaveType = strtolower($request->leave_type);
+                $credits = $request->credits;
 
-            return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
-                ->with('success', '✅ Leave credits added successfully!');
+                if (!in_array($leaveType, [
+                    'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave'
+                ])) {
+                    throw new \Exception('Invalid leave type.');
+                }
 
-        } catch (\Exception $e) {
-            return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
-                ->with('error', '❌ ' . $e->getMessage());
+                $employee->{$leaveType} += $credits;
+                $employee->save();
+
+                return redirect()->route('leave.index', ['employee_id' => $employee->id])
+                    ->with('success', '✅ Other leave credits added successfully!');
+                    
+            } catch (\Exception $e) {
+                return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                    ->with('error', '❌ ' . $e->getMessage());
+            }
         }
-    }
+
 
     public function getEmployeeLeaveBalances($employeeId)
     {
