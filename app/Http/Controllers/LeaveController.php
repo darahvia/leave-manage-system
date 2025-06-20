@@ -38,7 +38,7 @@ class LeaveController extends Controller
             'middle_name' => 'required|string',
             'division' => 'required|string',
             'designation' => 'required|string',
-            'salary' => 'required|numeric',
+            'original_appointment' => 'required|string',
             'balance_forwarded_vl' => 'nullable|numeric',
             'balance_forwarded_sl' => 'nullable|numeric',
         ]);
@@ -58,30 +58,25 @@ class LeaveController extends Controller
 
         $employee = Employee::create($employeeData);
 
-        // Redirect using the new fields
-        return redirect()->route('employee.find', [
-            'surname' => $employee->surname,
-            'given_name' => $employee->given_name,
-            'middle_name' => $employee->middle_name,
-        ])->with('success', '✅ Employee Added!');
-    }
+        $fullName = "{$employee->surname}, {$employee->given_name} {$employee->middle_name}";
 
+        return redirect()->route('employee.find', ['name' => $fullName])
+            ->with('success', '✅ Employee Added!');
+        }
 
         public function findEmployee(Request $request)
         {
-            $employee = Employee::where('surname', $request->surname)
-                ->where('given_name', $request->given_name)
-                ->where('middle_name', $request->middle_name)
+            $employee = Employee::whereRaw("CONCAT(surname, ', ', given_name, ' ', middle_name) = ?", [$request->name])
                 ->first();
 
             if ($employee) {
-                return redirect()->route('leave.index', ['employee_id' => $employee->id])
-                    ->with('success', '✅ Employee Added!');
+                return redirect()->route('leave.index', ['employee_id' => $employee->id]);
             }
 
             return redirect()->route('leave.index')
                 ->with('error', '❌ Employee not found.');
-}
+        }
+
 
         public function submitLeave(Request $request)
         {
@@ -221,6 +216,6 @@ class LeaveController extends Controller
             $currentDate->addDay();
         }
         return $workingDays;
-    }
+        }
 
 }
