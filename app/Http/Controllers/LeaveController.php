@@ -77,6 +77,40 @@ class LeaveController extends Controller
                 ->with('error', '❌ Employee not found.');
         }
 
+        public function deleteLeave(Request $request)
+        {
+            try {
+                $request->validate([
+                    'id' => 'required|integer',
+                    'type' => 'required|in:leave,credit'
+                ]);
+
+                $leaveApplication = LeaveApplication::findOrFail($request->id);
+                $leaveApplication->delete();
+
+                $recordType = $request->type === 'credit' ? 'credit entry' : 'leave application';
+                
+                // Return JSON for AJAX requests
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => ucfirst($recordType) . ' deleted successfully.'
+                    ]);
+                }
+
+                return back()->with('success', ucfirst($recordType) . ' deleted successfully.');
+                
+            } catch (\Exception $e) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'An error occurred while deleting the record: ' . $e->getMessage()
+                    ], 500);
+                }
+                
+                return back()->with('error', 'An error occurred while deleting the record: ' . $e->getMessage());
+            }
+        }
 
         public function submitLeave(Request $request)
         {
@@ -88,19 +122,6 @@ class LeaveController extends Controller
                 'inclusive_date_start' => 'required|date',
                 'inclusive_date_end' => 'required|date|after_or_equal:inclusive_date_start',
             ]);
-
-
-            // Calculate working days on the backend for validation
-            $startDate = Carbon::parse($request->inclusive_date_start);
-            $endDate = Carbon::parse($request->inclusive_date_end);
-            $calculatedWorkingDays = $this->calculateWorkingDays($startDate, $endDate);
-
-            // Verify the submitted working days match the calculated ones
-            if ($request->working_days != $calculatedWorkingDays) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Working days calculation mismatch. Expected: ' . $calculatedWorkingDays);
-            }
 
             try {
                 $employee = Employee::find($request->employee_id);
@@ -201,21 +222,4 @@ class LeaveController extends Controller
             return response()->json([], 500);
         }
     }
-
-    private function calculateWorkingDays(Carbon $startDate, Carbon $endDate)
-    {
-        $workingDays = 0;
-        $currentDate = $startDate->copy();
-
-
-        while ($currentDate <= $endDate) {
-            // Check if it's a weekday (Monday = 1, Sunday = 0)
-            if ($currentDate->dayOfWeek >= 1 && $currentDate->dayOfWeek <= 5) {
-                $workingDays++;
-            }
-            $currentDate->addDay();
-        }
-        return $workingDays;
-        }
-
 }
