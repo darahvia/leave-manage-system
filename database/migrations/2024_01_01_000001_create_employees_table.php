@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('middle_name');
             $table->string('division');
             $table->string('designation');
-            $table->decimal('salary', 10, 2);
+            $table->string('original_appointment')->nullable();
             $table->integer('vl');
             $table->integer('sl');
             $table->integer('spl');

@@ -9,7 +9,7 @@ class Employee extends Model
     use HasFactory;
 
     protected $fillable = [
-        'surname', 'given_name', 'middle_name', 'division', 'designation', 'salary', 
+        'surname', 'given_name', 'middle_name', 'division', 'designation', 'orinal_appointment', 
         'vl', 'sl', 'spl', 'fl', 'solo_parent', 'ml', 'pl',
         'ra9710', 'rl', 'sel', 'study_leave',
         'balance_forwarded_vl', 'balance_forwarded_sl'
