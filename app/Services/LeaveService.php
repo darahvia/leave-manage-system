@@ -49,6 +49,8 @@ class LeaveService
         }
 
         // Handle different leave type deductions
+        $this->recalculateBalancesFromDate($employee, $leaveDate);
+
         $this->processLeaveDeductions($employee, $leaveType, $workingDays, $leaveDate);
 
         return $leaveApplication;
@@ -74,15 +76,14 @@ class LeaveService
                 // Deduct from SPL balance
                 $employee->deductLeave('spl', $workingDays);
                 break;
-                
             case 'fl':
                 // Force Leave: Deduct from both FL and VL
                 $employee->deductLeave('fl', $workingDays);
+                $employee->deductLeave('vl', $workingDays); 
                 // Also recalculate VL balances since FL affects VL too
                 $this->recalculateBalancesFromDate($employee, $leaveDate);
                 break;
                 
-            case 'solo_parent':
             case 'solo parent':
                 $employee->deductLeave('solo_parent', $workingDays);
                 break;
@@ -152,67 +153,6 @@ class LeaveService
                 : $this->getAvailableBalance($employee, 'vl');
             
             return ($flBalance >= $workingDays) && ($vlBalance >= $workingDays);
-        }/**
- * Recalculate all VL/SL balances from a specific date onwards
- */
-private function recalculateBalancesFromDate(Employee $employee, $fromDate)
-{
-    // Get all leave applications (including credits and cancellations) from the specified date onwards
-    $leaves = LeaveApplication::where('employee_id', $employee->id)
-        ->where(function($query) use ($fromDate) {
-            $query->whereDate('inclusive_date_start', '>=', $fromDate)
-                  ->orWhereDate('earned_date', '>=', $fromDate);
-        })
-        ->get()
-        ->sortBy(function($leave) {
-            // Create a sortable date - use the earliest relevant date for each record
-            $dates = array_filter([
-                $leave->inclusive_date_start,
-                $leave->earned_date,
-                $leave->date_filed
-            ]);
-            
-            if (empty($dates)) {
-                return now(); // fallback if no dates
-            }
-            
-            $earliestDate = min($dates);
-            
-            // Return a combination of date and ID for consistent sorting
-            return $earliestDate . '-' . str_pad($leave->id, 10, '0', STR_PAD_LEFT);
-        });
-
-    // Get the balance just before this date
-    $balances = $this->getBalancesBeforeDate($employee, $fromDate);
-
-    // Recalculate each leave application's current_vl and current_sl
-    foreach ($leaves as $leave) {
-        if ($leave->is_credit_earned) {
-            // Add earned credits
-            $balances['vl'] += $leave->earned_vl ?? 1.25;
-            $balances['sl'] += $leave->earned_sl ?? 1.25;
-        } else {
-            // Handle leave deduction or cancellation credit restoration
-            $leaveType = strtolower($leave->leave_type);
-            $workingDays = $leave->working_days;
-            
-            if ($leaveType === 'vl') {
-                if ($leave->is_cancellation ?? false) {
-                    // Cancellation: add credits back (working_days is negative for cancellations)
-                    $balances['vl'] += abs($workingDays);
-                } else {
-                    // Regular leave: deduct credits
-                    $balances['vl'] = max(0, $balances['vl'] - $workingDays);
-                }
-            } elseif ($leaveType === 'sl') {
-                if ($leave->is_cancellation ?? false) {
-                    // Cancellation: add credits back (working_days is negative for cancellations)
-                    $balances['sl'] += abs($workingDays);
-                } else {
-                    // Regular leave: deduct credits
-                    $balances['sl'] = max(0, $balances['sl'] - $workingDays);
-                }
-            }
         }
         
         return $availableBalance >= $workingDays;
@@ -266,23 +206,37 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
         $balances = $this->getBalancesBeforeDate($employee, $fromDate);
 
         // Recalculate each leave application's current_vl and current_sl
-        foreach ($leaves as $leave) {
-            if ($leave->is_credit_earned) {
-                // Add earned credits
-                $balances['vl'] += $leave->earned_vl ?? 1.25;
-                $balances['sl'] += $leave->earned_sl ?? 1.25;
-            } else {
-                // Deduct leave
-                $leaveType = strtolower($leave->leave_type);
-                if ($leaveType === 'vl') {
-                    $balances['vl'] = max(0, $balances['vl'] - $leave->working_days);
-                } elseif ($leaveType === 'sl') {
-                    $balances['sl'] = max(0, $balances['sl'] - $leave->working_days);
-                } elseif ($leaveType === 'fl') {
-                    // Force Leave also deducts from VL
-                    $balances['vl'] = max(0, $balances['vl'] - $leave->working_days);
+    foreach ($leaves as $leave) {
+        if ($leave->is_credit_earned) {
+            // Add earned credits
+            $balances['vl'] += $leave->earned_vl ?? 1.25;
+            $balances['sl'] += $leave->earned_sl ?? 1.25;
+        } else {
+            // Handle leave deduction or cancellation credit restoration
+            $leaveType = strtolower($leave->leave_type);
+            $workingDays = $leave->working_days;
+            
+            if ($leaveType === 'vl') {
+                if ($leave->is_cancellation ?? false) {
+                    // Cancellation: add credits back (working_days is negative for cancellations)
+                    $balances['vl'] += abs($workingDays);
+                } else {
+                    // Regular leave: deduct credits
+                    $balances['vl'] = max(0, $balances['vl'] - $workingDays);
                 }
+            } elseif ($leaveType === 'sl') {
+                if ($leave->is_cancellation ?? false) {
+                    // Cancellation: add credits back (working_days is negative for cancellations)
+                    $balances['sl'] += abs($workingDays);
+                } else {
+                    // Regular leave: deduct credits
+                    $balances['sl'] = max(0, $balances['sl'] - $workingDays);
+                }
+            } elseif ($leaveType === 'fl') {
+                // Force Leave also deducts from VL
+                $balances['vl'] = max(0, $balances['vl'] - $workingDays);
             }
+        }
 
             // Update the leave application with new balances
             $leave->update([
@@ -415,7 +369,6 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
             'rl' => $employee->rl,
             'sel' => $employee->sel,
             'study_leave' => $employee->study_leave,
-            'adopt' => $employee->adopt,
         ];
     }
 

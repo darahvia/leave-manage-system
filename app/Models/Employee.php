@@ -129,6 +129,9 @@ class Employee extends Model
             case 'study_leave':
                 $this->study_leave = ($this->study_leave ?? 0) + $days;
                 break;
+            case 'adopt':
+                $this->adopt = ($this->adopt ?? 0) + $days;
+                break;
         }
        
         $this->save();
