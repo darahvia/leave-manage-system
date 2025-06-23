@@ -147,7 +147,10 @@
                     <td></td>
                 </tr>
                 @if($employee->leaveApplications && $employee->leaveApplications->count())
-                    @foreach($employee->leaveApplications as $app)
+                @foreach($employee->leaveApplications->sortBy([
+                    fn($a, $b) => ($a->earned_date ?? $a->date_filed) <=> ($b->earned_date ?? $b->date_filed),
+                    'date_filed'
+                ]) as $app)
                         <tr>
                             <td>{{ $app->earned_date ? \Carbon\Carbon::parse($app->earned_date)->format('F j, Y') : '' }}</td>
                             <td>
@@ -226,15 +229,15 @@
                                         </svg>
                                     </button>
                                 @endif
-                                    <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, '{{ $app->is_credit_earned ? 'credit' : 'leave' }}')">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="3,6 5,6 21,6"></polyline>
-                                            <path d="m5,6 1,14c0,1 1,2 2,2h8c1,0 2-1 2-2l1-14"></path>
-                                            <path d="m10,11 0,6"></path>
-                                            <path d="m14,11 0,6"></path>
-                                            <path d="M8,6V4c0-1,1-2,2-2h4c0-1,1-2,2-2v2"></path>
-                                        </svg>
-                                    </button>
+                                <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, '{{ $app->is_credit_earned ? 'credit' : 'leave' }}')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3,6 5,6 21,6"></polyline>
+                                        <path d="m5,6 1,14c0,1 1,2 2,2h8c1,0 2-1 2-2l1-14"></path>
+                                        <path d="m10,11 0,6"></path>
+                                        <path d="m14,11 0,6"></path>
+                                        <path d="M8,6V4c0-1,1-2,2-2h4c0-1,1-2,2-2v2"></path>
+                                    </svg>
+                                </button>
                             </td>
                         </tr>
                     @endforeach
