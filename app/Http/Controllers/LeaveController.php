@@ -153,6 +153,8 @@ class LeaveController extends Controller
                 $leaveApplication = LeaveApplication::findOrFail($request->id);
                 $leaveApplication->delete();
 
+                $this->leaveService->deleteLeaveApplication($leaveApplication);
+
                 $recordType = $request->type === 'credit' ? 'credit entry' : 'leave application';
                 
                 // Return JSON for AJAX requests
