@@ -8,6 +8,7 @@ Route::post('/add-employee', [LeaveController::class, 'addEmployee'])->name('emp
 Route::any('/find-employee', [LeaveController::class, 'findEmployee'])->name('employee.find');
 Route::post('/submit-leave', [LeaveController::class, 'submitLeave'])->name('leave.submit');
 Route::put('/update-leave', [LeaveController::class, 'updateLeave'])->name('leave.update');
+
 Route::delete('/delete-leave', [LeaveController::class, 'deleteLeave'])->name('leave.delete');
 Route::post('/add-credits', [LeaveController::class, 'addCreditsEarned'])->name('leave.credits');
 Route::post('/add-leave-row', [LeaveController::class, 'addLeaveRow'])->name('leave.row');

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->decimal('current_sl', 5, 2)->default(0);
             $table->boolean('is_credit_earned')->default(false);
             $table->date('earned_date')->nullable();
+            $table->boolean('is_cancellation')->default(false);
             $table->timestamps();
         });
     }

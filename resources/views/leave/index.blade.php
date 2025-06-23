@@ -120,20 +120,22 @@
             </table>
         </div>
 
+
+        <!-- Modal for Other Credits -->
         <div class="modal-bg" id="otherCreditsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:999;">
             <div class="modal-content" style="background:#fff; margin:5% auto; padding:20px; border-radius:8px; max-width:400px; position:relative;">
                 <button class="close" onclick="closeOtherCreditsModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:20px;">&times;</button>
                 <h3>Other Leave Credits</h3>
+                @php
+                    $balances = app(\App\Services\LeaveService::class)->getCurrentBalances($employee);
+                @endphp
+
                 <ul style="list-style:none; padding:0;">
-                    <li>Special Privilege Leave: <strong>{{ $employee->spl ?? 0 }}</strong></li>
-                    <li>Force Leave: <strong>{{ $employee->fl ?? 0 }}</strong></li>
-                    <li>Solo Parent Leave: <strong>{{ $employee->solo_parent ?? 0 }}</strong></li>
-                    <li>Maternity Leave: <strong>{{ $employee->ml ?? 0 }}</strong></li>
-                    <li>Paternity Leave: <strong>{{ $employee->pl ?? 0 }}</strong></li>
-                    <li>RA 9710 Leave: <strong>{{ $employee->ra9710 ?? 0 }}</strong></li>
-                    <li>Rehabilitation Leave: <strong>{{ $employee->rl ?? 0 }}</strong></li>
-                    <li>Special Emergency Leave: <strong>{{ $employee->sel ?? 0 }}</strong></li>
-                    <li>Study Leave: <strong>{{ $employee->study_leave ?? 0 }}</strong></li>
+                    @foreach ($balances as $type => $value)
+                        @if (!in_array($type, ['vl', 'sl'])) {{-- exclude VL/SL if showing elsewhere --}}
+                            <li>{{ \App\Services\LeaveService::getLeaveTypes()[strtoupper($type)] ?? ucfirst(str_replace('_', ' ', $type)) }}: <strong>{{ $value }}</strong></li>
+                        @endif
+                    @endforeach
                 </ul>
             </div>
         </div>
@@ -213,10 +215,11 @@
                             </td>
                             <td data-label="LEAVE INCURRED">
                                 @if(!$app->is_credit_earned)
-                                    {{ $app->leave_type ?? '' }}
+                                    {{ \App\Services\LeaveService::getLeaveTypes()[$app->leave_type] ?? $app->leave_type }}
                                 @endif
                             </td>
                             <td data-label="VL">
+                            <td>
                                 @if(!$app->is_credit_earned && $app->leave_type === 'VL')
                                     {{ $app->working_days ?? '' }}
                                 @endif
@@ -252,6 +255,26 @@
                             <td data-label="ACTIONS">
                                 @if(!$app->is_cancellation)
                                 <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, '{{ $app->is_credit_earned ? 'credit' : 'leave' }}')">
+                            @php
+                                $otherLeaveTypes = ['ML', 'PL', 'RA9710', 'RL', 'SEL', 'STUDY_LEAVE', 'ADOPT'];
+                            @endphp
+                            <td>
+                                @if (in_array($app->leave_type, $otherLeaveTypes))
+                                    {{ $app->working_days ?? '' }}
+                                @endif
+                            </td>
+                            <td>
+                                @if(!$app->is_credit_earned)
+                                    {{ $app->leave_details ?? '' }}
+                                @endif
+                            </td>
+                            <td>{{ $app->current_vl ?? '' }}</td>
+                            <td>{{ $app->current_sl ?? '' }}</td>
+                            <td>
+   
+                                @if ($app->is_credit_earned)
+                                    {{-- Credits earned → Only delete --}}
+                                    <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, 'credit')">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="3,6 5,6 21,6"></polyline>
                                         <path d="m5,6 1,14c0,1 1,2 2,2h8c1,0 2-1 2-2l1-14"></path>
@@ -259,37 +282,65 @@
                                         <path d="m14,11 0,6"></path>
                                         <path d="M8,6V4c0-1,1-2,2-2h4c0-1,1-2,2-2v2"></path>
                                     </svg>
-                                </button>
-                                @if(!$app->is_credit_earned)
-                                <button type="button" class="edit-btn" onclick="editLeaveApplication(
-                                    {{ $app->id }},
-                                    '{{ $app->leave_type }}',
-                                    '{{ \Carbon\Carbon::parse($app->date_filed)->format('Y-m-d') }}',
-                                    '{{ \Carbon\Carbon::parse($app->inclusive_date_start)->format('Y-m-d') }}',
-                                    '{{ \Carbon\Carbon::parse($app->inclusive_date_end)->format('Y-m-d') }}',
-                                    '{{ $app->working_days }}'
+                                    </button>
+
+                                @elseif ($app->is_cancellation)
+                                    {{-- Cancellation → Only edit --}}
+                                    <button type="button" class="edit-btn" onclick="editLeaveApplication(
+                                        {{ $app->id }},
+                                        '{{ $app->leave_type }}',
+                                        '{{ \Carbon\Carbon::parse($app->date_filed)->format('Y-m-d') }}',
+                                        '{{ \Carbon\Carbon::parse($app->inclusive_date_start)->format('Y-m-d') }}',
+                                        '{{ \Carbon\Carbon::parse($app->inclusive_date_end)->format('Y-m-d') }}',
+                                        '{{ $app->working_days }}'
                                     )">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                             <path d="M12 12l7-7 3 3-7 7-3 0 0-3z"></path>
-                                        </svg>
-                                    </button>
-                                <button type="button" class="cancel-btn" onclick="cancelLeaveApplication(
-                                    {{ $app->id }},
-                                    '{{ $app->leave_type }}',
-                                    '{{ \Carbon\Carbon::parse($app->inclusive_date_start)->format('Y-m-d') }}',
-                                    '{{ \Carbon\Carbon::parse($app->inclusive_date_end)->format('Y-m-d') }}',
-                                    '{{ $app->working_days }}'
+                                        </svg>                                    </button>
+
+                                @else
+                                    {{-- Regular leave → Edit, Delete, Cancel --}}
+                                    <button type="button" class="edit-btn" onclick="editLeaveApplication(
+                                        {{ $app->id }},
+                                        '{{ $app->leave_type }}',
+                                        '{{ \Carbon\Carbon::parse($app->date_filed)->format('Y-m-d') }}',
+                                        '{{ \Carbon\Carbon::parse($app->inclusive_date_start)->format('Y-m-d') }}',
+                                        '{{ \Carbon\Carbon::parse($app->inclusive_date_end)->format('Y-m-d') }}',
+                                        '{{ $app->working_days }}'
                                     )">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                                        </svg>
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M12 12l7-7 3 3-7 7-3 0 0-3z"></path>
+                                        </svg>                                    </button>
+
+                                    <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, 'leave')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3,6 5,6 21,6"></polyline>
+                                        <path d="m5,6 1,14c0,1 1,2 2,2h8c1,0 2-1 2-2l1-14"></path>
+                                        <path d="m10,11 0,6"></path>
+                                        <path d="m14,11 0,6"></path>
+                                        <path d="M8,6V4c0-1,1-2,2-2h4c0-1,1-2,2-2v2"></path>
+                                    </svg>
+                                    </button>
+
+                                    <button type="button" class="cancel-btn" onclick="cancelLeaveApplication(
+                                        {{ $app->id }},
+                                        '{{ $app->leave_type }}',
+                                        '{{ \Carbon\Carbon::parse($app->inclusive_date_start)->format('Y-m-d') }}',
+                                        '{{ \Carbon\Carbon::parse($app->inclusive_date_end)->format('Y-m-d') }}',
+                                        '{{ $app->working_days }}'
+                                    )">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                                            </svg>
                                     </button>
                                 @endif
-                                @endif
+     
                             </td>
+
                         </tr>
                     @endforeach
                 @endif
@@ -308,16 +359,14 @@
                    <input type="hidden" name="is_cancellation" id="is_cancellation" value="0">
                 <div class="emp-form" id="leave-form-container">
                     <label>Leave Type:</label>
-                    <select name="leave_type" id="leave_type" required>
-                        <option value="VL">Vacation Leave</option>
-                        <option value="SL">Sick Leave</option>
-                        <option value="ML">Maternity Leave</option>
-                        <option value="PL">Paternity Leave</option>
-                        <option value="SPL">Special Leave</option>
-                        <option value="FL">Force Leave</option>
-                        <option value="SOLO PARENT">Solo Parent</option>
-                        <option value="OTHERS">Others</option>
+                    <select name="leave_type" class="form-control" required>
+                        @foreach ($leaveTypes as $code => $label)
+                            <option value="{{ $code }}" {{ old('leave_type') == $code ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
                     </select>
+
                     <label>Date Filed:</label>
                     <input type="date" name="date_filed" id="date_filed" required>
                     <label>Leave Start Date (Inclusive):</label>
@@ -326,6 +375,8 @@
                     <input type="date" name="inclusive_date_end" id="inclusive_date_end" required>
                     <label>Working Days:</label>
                     <input type="number" name="working_days" id="working_days" readonly style="background-color: #f5f5f5;">
+                    <label>Remarks:</label>
+                    <input type="text" name="leave_details" id="leave_details">
                     <button type="submit" id="submit-btn">Add Leave</button>
                     <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" style="display: none; margin-left: 10px; background-color: #6c757d;">Cancel</button>
                 </div>
@@ -344,16 +395,12 @@
                 <input type="hidden" name="employee_id" value="{{ $employee->id }}">
                 <div class="emp-form">
                     <label>Leave Type:</label>
-                    <select name="leave_type" required>
-                        <option value="spl">Special Privilege Leave</option>
-                        <option value="fl">Forced Leave</option>
-                        <option value="solo_parent">Solo Parent Leave</option>
-                        <option value="ml">Maternity Leave</option>
-                        <option value="pl">Paternity Leave</option>
-                        <option value="ra9710">RA9710 Leave</option>
-                        <option value="rl">Rehabilitation Leave</option>
-                        <option value="sel">Special Emergency Leave</option>
-                        <option value="study_leave">Study Leave</option>
+                    <select name="leave_type" class="form-control" required>
+                        @foreach ($leaveTypes as $code => $label)
+                            <option value="{{ $code }}" {{ old('leave_type') == $code ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
                     </select>
 
                     <label>Credits to Add:</label>
@@ -377,4 +424,4 @@
     
     @vite(['resources/js/leave-form.js'])
 </body>
-</html>
+</html>>
