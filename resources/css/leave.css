@@ -1,10 +1,133 @@
 /* Base styles */
 body {
+    background-color: #e9f0f9;
     font-family: 'Segoe UI', 'Arial', sans-serif;
     background: #f4f6fa;
     color: #222;
     margin: 0;
 }
+
+.header-wrapper {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.header-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.header-logo {
+    height: 110px;
+    width: 110px;
+    object-fit: contain;
+}
+
+.header-text {
+    text-align: center;
+}
+
+.header-title {
+    font-size: 34px;
+    font-weight: 700;
+    color: #1d3557;
+}
+
+.header-title .dep {
+    color: #e63946;
+}
+
+.header-title .ed {
+    color: #e63946;
+}
+
+.header-subtitle {
+    font-size: 20px;
+    font-weight: 500;
+    color: #444;
+    margin-top: 6px;
+}
+
+.search-bar-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    outline: none;
+    border: none;
+    padding: 10px;
+}
+
+.search-box {
+    display: flex;
+    align-items: right;
+    background: white;
+    border-radius: 50px;
+    padding: 12px 18px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    width: 350px;
+    max-width: 90%;
+    outline: none;
+}
+
+.search-box input {
+    border: solid 0px;
+    outline: none;
+    font-size: 16px;
+    padding: 6px 12px;
+    width: 100%;
+    background: transparent;
+    align-items: right;
+}
+
+.search-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    color: #555;
+    align-items: right;
+    outline: none;
+    margin-right: 20px;
+
+}
+
+.search-form {
+    border: none;
+    outline: none;
+}
+
+.employee-search {
+    border: none;
+    outline: none;
+}
+
+.add-employee-btn {
+    background-color: #1d3557;
+    color: white;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.3s;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.add-employee-btn:hover {
+    background-color: #007bff;
+}
+
+
 
 h1, h2, h3, h4 {
     color: #1a397b;
@@ -108,8 +231,6 @@ a:hover, a:focus {
     background: #17407c;
 }
 
-
-
 .icon-btn {
     background: #1a397b;
     color: #fff;
@@ -131,37 +252,173 @@ a:hover, a:focus {
     background: #17407c;
 }
 
-/* Modal styles */
+/* Modal background */
 .modal-bg {
     display: none;
     position: fixed;
     z-index: 1000;
-    left: 0; top: 0; right: 0; bottom: 0;
-    background: rgba(26,57,123,0.12);
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.25);
     justify-content: center;
     align-items: center;
+    background-color: rgba(168, 189, 247, 0.8);
 }
 
-.modal-bg.active { display: flex; }
+.modal-bg.active {
+    display: flex;
+    background-color: rgba(168, 189, 247, 0.8);
+}
 
+/* Modal box with blue gradient header */
+/* Two-column modal layout (clean split) */
 .modal-content {
-    background: #fff;
-    padding: 32px 36px 28px 36px;
-    border-radius: 8px;
-    min-width: 340px;
-    box-shadow: 0 4px 32px rgba(26,57,123,0.12);
+    background: linear-gradient(to bottom right, #dce9f9 0%, #ffffff 90%);
+    border-radius: 12px;
+    width: 650px;
+    max-width: 95%;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    font-family: 'Segoe UI', sans-serif;
     position: relative;
 }
 
-.modal-content button.close {
+.modal-content .close {
     position: absolute;
     top: 12px;
     right: 16px;
+    font-size: 22px;
     background: none;
     border: none;
-    font-size: 1.5em;
-    color: #888;
+    color: #555;
     cursor: pointer;
+    z-index: 10;
+}
+
+.modal-header {
+    background: linear-gradient(to right, #1a397b, #4e77c1);
+    color: #fff;
+    padding: 16px 24px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Two-column modal layout (clean split) */
+.modal-content {
+    background: linear-gradient(to bottom right, #dce9f9 0%, #ffffff 90%);
+    border-radius: 12px;
+    width: 650px;
+    max-width: 95%;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    font-family: 'Segoe UI', sans-serif;
+    position: relative;
+}
+
+.modal-content .close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 22px;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.modal-header {
+    background: linear-gradient(to right, #1a397b, #4e77c1);
+    color: #fff;
+    padding: 16px 24px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Split left and right form areas */
+.emp-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    row-gap: 12px;
+    padding: 24px;
+}
+
+.emp-form label {
+    font-weight: 500;
+    color: #1a397b;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.emp-form input {
+    width: 90%;
+    padding: 10px 10px;
+    border: 2x solid #c3cedd bold;
+    border-radius: 8px;
+    font-size: 15px;
+    background: #fefeff;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    display: block;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.emp-form input:focus {
+    border-color: #2a4e9c;
+    box-shadow: 0 0 0 3px rgba(42, 78, 156, 0.2);
+    outline: none;
+}
+
+/* Put first 5 fields on left, rest on right */
+.emp-form .form-left {
+    grid-column: 1 / 2;
+    display: flex;
+    flex-direction: column;
+}
+
+.emp-form .form-right {
+    grid-column: 2 / 3;
+    display: flex;
+    flex-direction: column;
+}
+
+.emp-form .form-right button[type="submit"] {
+    justify-content: center;
+    width: 98%;
+    margin-top: 16px;
+    padding: 12px;
+    background: linear-gradient(to right, #1a397b, #2f4f9c);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 14px rgba(26, 57, 123, 0.15);
+}
+
+.emp-form .form-right button[type="submit"]:hover {
+    background: linear-gradient(to right, #163a6d, #26437d);
+    transform: translateY(-1px) scale(1.02);
+}
+
+@media (max-width: 640px) {
+    .emp-form {
+        grid-template-columns: 1fr;
+    }
+    .emp-form .form-left,
+    .emp-form .form-right {
+        grid-column: 1 / -1;
+    }
 }
 
 /* Employee details */
@@ -246,23 +503,26 @@ a:hover, a:focus {
     align-items: center;
     gap: 12px;
     margin-bottom: 24px;
+    outline: none;
 }
-
 
 
 .search-form input[type="text"] {
     width: 180px;
-    padding: 7px 10px;
+    padding: 5px;
     border: 1px solid #bfc9d9;
     border-radius: 4px;
     font-size: 1em;
     background: #fff;
     transition: border-color 0.2s;
+    outline: none;
+    border: none;
 }
 
 .search-form input[type="text"]:focus {
     border-color: #1a397b;
     outline: none;
+    border: none;
 }
 
 .search-btn {
@@ -280,6 +540,7 @@ a:hover, a:focus {
 .search-btn:hover,
 .search-btn:focus {
     background: #17407c;
+    outline: none;
 }
 
 /* Square add icon button */
@@ -337,7 +598,6 @@ a:hover, a:focus {
 .emp-form {
     position: relative;
 }
-
 
 /* Ensure the parent container has relative positioning */
 .search-form .emp-form {
@@ -466,4 +726,103 @@ a:hover, a:focus {
 #cancel-edit-btn:hover {
     background-color: #545b62;
 }
+}
+
+/* Fullscreen Header Effect */
+.header-wrapper.fullscreen {
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    animation: zoomIn 0.8s ease forwards;
+    background: #f4f6fa;
+}
+
+.header-wrapper.minimized {
+    height: auto;
+    padding-top: 20px;
+}
+
+/* Zoom Animations */
+@keyframes zoomIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes zoomOut {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0.9);
+        opacity: 0.9;
+    }
+}
+
+.header-wrapper.fullscreen {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    animation: zoomIn 0.8s ease forwards;
+    background: #f4f6fa;
+    padding: 40px 20px;
+}
+
+.header-wrapper.fullscreen .header-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 50px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.header-wrapper.fullscreen .header-logo {
+    transform: scale(1.2);
+    transition: transform 0.4s ease;
+}
+
+.header-wrapper.fullscreen .header-title {
+    font-size: 48px;
+    transform: scale(1.2);
+    transition: transform 0.4s ease;
+}
+
+.header-wrapper.fullscreen .header-subtitle {
+    font-size: 24px;
+    transform: scale(1.1);
+    transition: transform 0.4s ease;
+}
+
+.header-wrapper.fullscreen .search-bar-section {
+    gap: 30px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.header-wrapper.fullscreen .search-box {
+    width: 420px;
+    padding: 16px 24px;
+    transform: scale(1.0);
+    transition: transform 0.4s ease;
+}
+
+.header-wrapper.fullscreen .search-box input {
+    font-size: 18px;
+}
+
+.header-wrapper.fullscreen .add-employee-btn {
+    font-size: 17px;
+    padding: 14px 24px;
+    transform: scale(1.1);
+    transition: transform 0.4s ease;
 }
