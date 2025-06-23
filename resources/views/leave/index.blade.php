@@ -65,6 +65,9 @@
 
     <!-- Employee Details Table -->
     @if($employee)
+        @php
+            $latestApp = $employee->leaveApplications->last();
+        @endphp
 
         <div class="emp-details-table">
             <table class="employee-info-table">
@@ -75,31 +78,53 @@
                     <td class="value">{{ strtoupper($employee->division) }}</td>
                     <td class="label">BASIC SALARY</td>
                     <td class="value">{{ number_format($employee->salary, 2) }}</td>
-                    <td class="label"></td>
-                    <td class="value"></td>
+                    <td class="label"> FORCE LEAVE BALANCE </td>
+                    <td class="value">{{ strtoupper($employee->fl) }}</td>
                 </tr>
                 <tr>
                     <td class="label">GIVEN NAME</td>
                     <td class="value">{{ strtoupper($employee->given_name) }}</td>
                     <td class="label">DESIGNATION</td>
                     <td class="value">{{ strtoupper($employee->designation) }}</td>
-                    <td class="label">FORCED LEAVE BALANCE</td>
-                    <td class="value">{{ $employee->fl ?? 0 }}</td>
-                    <td class="label"></td>
-                    <td class="value"></td>
+                    <td class="label">VACATION LEAVE BALANCE</td>
+                    <td class="value">{{ $latestApp ? $latestApp->current_vl : ($employee->balance_forwarded_vl ?? 0) }}</td>
+                    <td class="label">SPECIAL PRIVILEGE LEAVE BALANCE</td>
+                    <td class="value">{{ $employee->spl ?? 0 }}</td>
                 </tr>
                 <tr>
                     <td class="label">MIDDLE NAME</td>
                     <td class="value">{{ strtoupper($employee->middle_name) }}</td>
                     <td class="label">ORIGINAL APPOINTMENT</td>
                     <td class="value">{{ $employee->original_appointment ?? '' }}</td>
-                    <td class="label">SPECIAL PRIVILEGE LEAVE BALANCE</td>
-                    <td class="value">{{ $employee->spl ?? 0 }}</td>
-                    <td class="label"></td>
-                    <td class="value"></td>
+                    <td class="label">SICK LEAVE BALANCE</td>
+                    <td class="value">{{ $latestApp ? $latestApp->current_sl : ($employee->balance_forwarded_sl ?? 0) }}</td>
+                    <td class="label"> VIEW ALL </td>
+                    <td class="value">
+                        <button type="button" id="viewAllBtn" onclick="showOtherCreditsModal()">View All</button>
+                    </td>
                 </tr>
             </table>
         </div>
+
+        <!-- Modal for Other Credits -->
+        <div class="modal-bg" id="otherCreditsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:999;">
+            <div class="modal-content" style="background:#fff; margin:5% auto; padding:20px; border-radius:8px; max-width:400px; position:relative;">
+                <button class="close" onclick="closeOtherCreditsModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:20px;">&times;</button>
+                <h3>Other Leave Credits</h3>
+                <ul style="list-style:none; padding:0;">
+                    <li>Special Privilege Leave: <strong>{{ $employee->spl ?? 0 }}</strong></li>
+                    <li>Force Leave: <strong>{{ $employee->fl ?? 0 }}</strong></li>
+                    <li>Solo Parent Leave: <strong>{{ $employee->solo_parent ?? 0 }}</strong></li>
+                    <li>Maternity Leave: <strong>{{ $employee->ml ?? 0 }}</strong></li>
+                    <li>Paternity Leave: <strong>{{ $employee->pl ?? 0 }}</strong></li>
+                    <li>RA 9710 Leave: <strong>{{ $employee->ra9710 ?? 0 }}</strong></li>
+                    <li>Rehabilitation Leave: <strong>{{ $employee->rl ?? 0 }}</strong></li>
+                    <li>Special Emergency Leave: <strong>{{ $employee->sel ?? 0 }}</strong></li>
+                    <li>Study Leave: <strong>{{ $employee->study_leave ?? 0 }}</strong></li>
+                </ul>
+            </div>
+        </div>
+
     @endif
 
 
@@ -287,13 +312,36 @@
                     <button type="submit">Add Credits Earned</button>
                 </div>
             </form>
+            <form method="POST" action="{{ route('leave.otherCredits') }}">
+                @csrf
+                <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                <div class="emp-form">
+                    <label>Leave Type:</label>
+                    <select name="leave_type" required>
+                        <option value="spl">Special Privilege Leave</option>
+                        <option value="fl">Forced Leave</option>
+                        <option value="solo_parent">Solo Parent Leave</option>
+                        <option value="ml">Maternity Leave</option>
+                        <option value="pl">Paternity Leave</option>
+                        <option value="ra9710">RA9710 Leave</option>
+                        <option value="rl">Rehabilitation Leave</option>
+                        <option value="sel">Special Emergency Leave</option>
+                        <option value="study_leave">Study Leave</option>
+                    </select>
+
+                    <label>Credits to Add:</label>
+                    <input type="number" name="credits" step="0.01" required>
+
+                    <button type="submit">Add Other Credits</button>
+                </div>
+            </form>
         </div>
     @endif
 
    <!-- External Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
-    <!-- Pass Laravel routes to JavaScript -->
+    <!-- Pass Laravegitl routes to JavaScript -->
     <script>
         // Make Laravel routes available to JavaScript
         window.autocompleteRoute = '{{ route("employee.autocomplete") }}';
@@ -306,4 +354,4 @@
     @vite(['resources/js/leave-form.js'])
 
 </body>
-</html>
+</html>>

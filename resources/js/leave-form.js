@@ -348,6 +348,13 @@ function deleteRecordWithForm(id, type) {
     }
 }
 
+window.showOtherCreditsModal = function() {
+    document.getElementById('otherCreditsModal').style.display = 'block';
+}
+window.closeOtherCreditsModal = function() {
+    document.getElementById('otherCreditsModal').style.display = 'none';
+}
+
 // Make functions available globally for onclick handlers
 window.editLeaveApplication = editLeaveApplication;
 window.deleteRecord = deleteRecord;
