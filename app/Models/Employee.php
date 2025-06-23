@@ -11,7 +11,7 @@ class Employee extends Model
     protected $fillable = [
         'surname', 'given_name', 'middle_name', 'division', 'designation', 'original_appointment',
         'vl', 'sl', 'spl', 'fl', 'solo_parent', 'ml', 'pl',
-        'ra9710', 'rl', 'sel', 'study_leave',
+        'ra9710', 'rl', 'sel', 'study_leave', 'adopt',
         'balance_forwarded_vl', 'balance_forwarded_sl',
         'salary' // Add salary to fillable if not already there
     ];
@@ -48,6 +48,8 @@ class Employee extends Model
                 return $this->sel ?? 0;
             case 'study_leave':
                 return $this->study_leave ?? 0;
+            case 'adopt':
+                return $this->adopt;
             default:
                 return 0;
         }
@@ -85,6 +87,9 @@ class Employee extends Model
                 break;
             case 'study_leave':
                 $this->study_leave = max(0, ($this->study_leave ?? 0) - $days);
+                break;
+            case 'adopt':
+                $this->adopt = max(0, $this->adopt - $days);
                 break;
         }
        

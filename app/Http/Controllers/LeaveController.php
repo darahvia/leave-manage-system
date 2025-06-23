@@ -55,6 +55,7 @@ class LeaveController extends Controller
         $employeeData['rl'] = $employeeData['rl'] ?? 0;
         $employeeData['sel'] = $employeeData['sel'] ?? 0;
         $employeeData['study_leave'] = $employeeData['study_leave'] ?? 0;
+        $employeeData['adopt'] = $employeeData['adopt'] ?? 0;
 
         $employee = Employee::create($employeeData);
 
@@ -77,6 +78,7 @@ class LeaveController extends Controller
                 ->with('error', '❌ Employee not found.');
         }
 
+
         public function submitLeave(Request $request)
         {
             $request->validate([
@@ -86,20 +88,36 @@ class LeaveController extends Controller
                 'date_filed' => 'required|date',
                 'inclusive_date_start' => 'required|date',
                 'inclusive_date_end' => 'required|date|after_or_equal:inclusive_date_start',
+                'is_cancellation' => 'sometimes|boolean',
             ]);
 
             try {
                 $employee = Employee::find($request->employee_id);
+                $isCancellation = $request->input('is_cancellation', false);
                 
-                $leaveApplication = $this->leaveService->processLeaveApplication(
-                    $employee,
-                    $request->all()
-                );
+                if ($isCancellation) {
+                    // Handle leave cancellation (credit restoration)
+                    $leaveApplication = $this->leaveService->processCancellation(
+                        $employee,
+                        $request->all()
+                    );
+                    
+                    $leaveTypeName = LeaveService::getLeaveTypes()[$request->leave_type] ?? $request->leave_type;
+                    
+                    return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                        ->with('success', "✅ {$leaveTypeName} cancellation processed! {$request->working_days} credits restored.");
+                } else {
+                    // Handle regular leave application
+                    $leaveApplication = $this->leaveService->processLeaveApplication(
+                        $employee,
+                        $request->all()
+                    );
 
-                $leaveTypeName = LeaveService::getLeaveTypes()[$request->leave_type] ?? $request->leave_type;
-                
-                return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
-                    ->with('success', "✅ {$leaveTypeName} application submitted successfully!");
+                    $leaveTypeName = LeaveService::getLeaveTypes()[$request->leave_type] ?? $request->leave_type;
+                    
+                    return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                        ->with('success', "✅ {$leaveTypeName} application submitted successfully!");
+                }
 
             } catch (\Exception $e) {
                 return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
@@ -218,7 +236,7 @@ class LeaveController extends Controller
                 $credits = $request->credits;
 
                 if (!in_array($leaveType, [
-                    'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave'
+                    'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave', 'adopt'
                 ])) {
                     throw new \Exception('Invalid leave type.');
                 }
@@ -235,24 +253,24 @@ class LeaveController extends Controller
             }
         }
 
-
-    public function getEmployeeLeaveBalances($employeeId)
-    {
-        $employee = Employee::find($employeeId);
+    // unused
+    // public function getEmployeeLeaveBalances($employeeId)
+    // {
+    //     $employee = Employee::find($employeeId);
         
-        if (!$employee) {
-            return response()->json(['error' => 'Employee not found'], 404);
-        }
+    //     if (!$employee) {
+    //         return response()->json(['error' => 'Employee not found'], 404);
+    //     }
 
-        $balances = [];
-        $leaveTypes = ['vl', 'sl', 'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave'];
+    //     $balances = [];
+    //     $leaveTypes = ['vl', 'sl', 'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave', 'adopt'];
         
-        foreach ($leaveTypes as $type) {
-            $balances[$type] = $employee->getCurrentLeaveBalance($type);
-        }
+    //     foreach ($leaveTypes as $type) {
+    //         $balances[$type] = $employee->getCurrentLeaveBalance($type);
+    //     }
 
-        return response()->json($balances);
-    }
+    //     return response()->json($balances);
+    // }
 
     public function employeeAutocomplete(Request $request)
     {

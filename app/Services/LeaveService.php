@@ -152,6 +152,67 @@ class LeaveService
                 : $this->getAvailableBalance($employee, 'vl');
             
             return ($flBalance >= $workingDays) && ($vlBalance >= $workingDays);
+        }/**
+ * Recalculate all VL/SL balances from a specific date onwards
+ */
+private function recalculateBalancesFromDate(Employee $employee, $fromDate)
+{
+    // Get all leave applications (including credits and cancellations) from the specified date onwards
+    $leaves = LeaveApplication::where('employee_id', $employee->id)
+        ->where(function($query) use ($fromDate) {
+            $query->whereDate('inclusive_date_start', '>=', $fromDate)
+                  ->orWhereDate('earned_date', '>=', $fromDate);
+        })
+        ->get()
+        ->sortBy(function($leave) {
+            // Create a sortable date - use the earliest relevant date for each record
+            $dates = array_filter([
+                $leave->inclusive_date_start,
+                $leave->earned_date,
+                $leave->date_filed
+            ]);
+            
+            if (empty($dates)) {
+                return now(); // fallback if no dates
+            }
+            
+            $earliestDate = min($dates);
+            
+            // Return a combination of date and ID for consistent sorting
+            return $earliestDate . '-' . str_pad($leave->id, 10, '0', STR_PAD_LEFT);
+        });
+
+    // Get the balance just before this date
+    $balances = $this->getBalancesBeforeDate($employee, $fromDate);
+
+    // Recalculate each leave application's current_vl and current_sl
+    foreach ($leaves as $leave) {
+        if ($leave->is_credit_earned) {
+            // Add earned credits
+            $balances['vl'] += $leave->earned_vl ?? 1.25;
+            $balances['sl'] += $leave->earned_sl ?? 1.25;
+        } else {
+            // Handle leave deduction or cancellation credit restoration
+            $leaveType = strtolower($leave->leave_type);
+            $workingDays = $leave->working_days;
+            
+            if ($leaveType === 'vl') {
+                if ($leave->is_cancellation ?? false) {
+                    // Cancellation: add credits back (working_days is negative for cancellations)
+                    $balances['vl'] += abs($workingDays);
+                } else {
+                    // Regular leave: deduct credits
+                    $balances['vl'] = max(0, $balances['vl'] - $workingDays);
+                }
+            } elseif ($leaveType === 'sl') {
+                if ($leave->is_cancellation ?? false) {
+                    // Cancellation: add credits back (working_days is negative for cancellations)
+                    $balances['sl'] += abs($workingDays);
+                } else {
+                    // Regular leave: deduct credits
+                    $balances['sl'] = max(0, $balances['sl'] - $workingDays);
+                }
+            }
         }
         
         return $availableBalance >= $workingDays;
@@ -333,7 +394,7 @@ class LeaveService
     /**
      * Get current balances for all leave types
      */
-    private function getCurrentBalances(Employee $employee)
+    public function getCurrentBalances(Employee $employee)
     {
         $lastApplication = $employee->leaveApplications()
             ->orderBy('inclusive_date_start', 'desc')
@@ -354,6 +415,7 @@ class LeaveService
             'rl' => $employee->rl,
             'sel' => $employee->sel,
             'study_leave' => $employee->study_leave,
+            'adopt' => $employee->adopt,
         ];
     }
 
@@ -453,16 +515,49 @@ class LeaveService
     {
         return [
             'VL' => 'Vacation Leave',
+            'FL' => 'Mandatory/Forced Leave',
             'SL' => 'Sick Leave',
-            'SPL' => 'Special Privilege Leave',
-            'FL' => 'Forced Leave',
-            'SOLO_PARENT' => 'Solo Parent Leave',
             'ML' => 'Maternity Leave',
             'PL' => 'Paternity Leave',
-            'RA9710' => 'RA 9710 Leave',
-            'RL' => 'Rehabilitation Leave',
-            'SEL' => 'Special Emergency Leave',
+            'SPL' => 'Special Privilege Leave',
+            'SOLO_PARENT' => 'Solo Parent Leave',
             'STUDY_LEAVE' => 'Study Leave',
+            'VAWC' => '10-Day VAWC Leave',
+            'RL' => 'Rehabilitation Privilege',
+            'RA9710' => 'Special Leave Benefits for Women',
+            'SEL' => 'Special Emergency Leave',
+            'ADOPT' => 'Adoption Leave',
         ];
+    }
+    public function processCancellation(Employee $employee, array $cancellationData)
+    {
+        $leaveType = strtolower($cancellationData['leave_type']);
+        $workingDays = $cancellationData['working_days']; // Credits to restore
+        $cancellationDate = $cancellationData['date_filed']; // Date cancellation was filed
+        $effectiveDate = $cancellationData['inclusive_date_start']; // When cancellation takes effect
+
+        // Create a new leave application record for the cancellation
+        // This will appear as a new row in the table
+        $cancellationApplication = LeaveApplication::create([
+            'employee_id' => $employee->id,
+            'leave_type' => $cancellationData['leave_type'],
+            'leave_details' => 'CANCELLED - Credits Restored',
+            'working_days' => -$workingDays, // Negative value to indicate credit restoration
+            'inclusive_date_start' => $effectiveDate,
+            'inclusive_date_end' => $cancellationData['inclusive_date_end'],
+            'date_filed' => $cancellationDate,
+            'commutation' => null,
+            'is_cancellation' => true, // Mark as cancellation entry
+        ]);
+
+        // Recalculate all balances from the effective date onwards
+        $this->recalculateBalancesFromDate($employee, $effectiveDate);
+
+        // For non-VL/SL leave types, add credits back to employee balance
+        if (!in_array($leaveType, ['vl', 'sl'])) {
+            $employee->addLeave($leaveType, $workingDays); // Add credits back
+        }
+
+        return $cancellationApplication;
     }
 }
