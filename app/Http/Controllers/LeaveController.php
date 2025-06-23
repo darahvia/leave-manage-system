@@ -55,6 +55,7 @@ class LeaveController extends Controller
         $employeeData['rl'] = $employeeData['rl'] ?? 0;
         $employeeData['sel'] = $employeeData['sel'] ?? 0;
         $employeeData['study_leave'] = $employeeData['study_leave'] ?? 0;
+        $employeeData['adopt'] = $employeeData['adopt'] ?? 0;
 
         $employee = Employee::create($employeeData);
 
@@ -235,7 +236,7 @@ class LeaveController extends Controller
                 $credits = $request->credits;
 
                 if (!in_array($leaveType, [
-                    'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave'
+                    'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave', 'adopt'
                 ])) {
                     throw new \Exception('Invalid leave type.');
                 }
@@ -252,24 +253,24 @@ class LeaveController extends Controller
             }
         }
 
-
-    public function getEmployeeLeaveBalances($employeeId)
-    {
-        $employee = Employee::find($employeeId);
+    // unused
+    // public function getEmployeeLeaveBalances($employeeId)
+    // {
+    //     $employee = Employee::find($employeeId);
         
-        if (!$employee) {
-            return response()->json(['error' => 'Employee not found'], 404);
-        }
+    //     if (!$employee) {
+    //         return response()->json(['error' => 'Employee not found'], 404);
+    //     }
 
-        $balances = [];
-        $leaveTypes = ['vl', 'sl', 'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave'];
+    //     $balances = [];
+    //     $leaveTypes = ['vl', 'sl', 'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave', 'adopt'];
         
-        foreach ($leaveTypes as $type) {
-            $balances[$type] = $employee->getCurrentLeaveBalance($type);
-        }
+    //     foreach ($leaveTypes as $type) {
+    //         $balances[$type] = $employee->getCurrentLeaveBalance($type);
+    //     }
 
-        return response()->json($balances);
-    }
+    //     return response()->json($balances);
+    // }
 
     public function employeeAutocomplete(Request $request)
     {

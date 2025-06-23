@@ -26,6 +26,8 @@ return new class extends Migration
             $table->integer('rl');
             $table->integer('sel');
             $table->integer('study_leave');
+            $table->integer('adopt');
+            $table->integer('vawc');
             $table->decimal('balance_forwarded_vl', 5, 2)->default(0);
             $table->decimal('balance_forwarded_sl', 5, 2)->default(0);
             $table->timestamps();

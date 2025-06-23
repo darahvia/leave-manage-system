@@ -252,7 +252,7 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
     /**
      * Get current balances for all leave types
      */
-    private function getCurrentBalances(Employee $employee)
+    public function getCurrentBalances(Employee $employee)
     {
         $lastApplication = $employee->leaveApplications()
             ->orderBy('inclusive_date_start', 'desc')
@@ -273,6 +273,7 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
             'rl' => $employee->rl,
             'sel' => $employee->sel,
             'study_leave' => $employee->study_leave,
+            'adopt' => $employee->adopt,
         ];
     }
 
@@ -325,16 +326,18 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
     {
         return [
             'VL' => 'Vacation Leave',
+            'FL' => 'Mandatory/Forced Leave',
             'SL' => 'Sick Leave',
-            'SPL' => 'Special Privilege Leave',
-            'FL' => 'Forced Leave',
-            'SOLO_PARENT' => 'Solo Parent Leave',
             'ML' => 'Maternity Leave',
             'PL' => 'Paternity Leave',
-            'RA9710' => 'RA 9710 Leave',
-            'RL' => 'Rehabilitation Leave',
-            'SEL' => 'Special Emergency Leave',
+            'SPL' => 'Special Privilege Leave',
+            'SOLO_PARENT' => 'Solo Parent Leave',
             'STUDY_LEAVE' => 'Study Leave',
+            'VAWC' => '10-Day VAWC Leave',
+            'RL' => 'Rehabilitation Privilege',
+            'RA9710' => 'Special Leave Benefits for Women',
+            'SEL' => 'Special Emergency Leave',
+            'ADOPT' => 'Adoption Leave',
         ];
     }
     public function processCancellation(Employee $employee, array $cancellationData)
