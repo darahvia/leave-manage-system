@@ -64,7 +64,7 @@ class LeaveService
  */
 private function recalculateBalancesFromDate(Employee $employee, $fromDate)
 {
-    // Get all leave applications (including credits) from the specified date onwards
+    // Get all leave applications (including credits and cancellations) from the specified date onwards
     $leaves = LeaveApplication::where('employee_id', $employee->id)
         ->where(function($query) use ($fromDate) {
             $query->whereDate('inclusive_date_start', '>=', $fromDate)
@@ -99,12 +99,26 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
             $balances['vl'] += $leave->earned_vl ?? 1.25;
             $balances['sl'] += $leave->earned_sl ?? 1.25;
         } else {
-            // Deduct leave
+            // Handle leave deduction or cancellation credit restoration
             $leaveType = strtolower($leave->leave_type);
+            $workingDays = $leave->working_days;
+            
             if ($leaveType === 'vl') {
-                $balances['vl'] = max(0, $balances['vl'] - $leave->working_days);
+                if ($leave->is_cancellation ?? false) {
+                    // Cancellation: add credits back (working_days is negative for cancellations)
+                    $balances['vl'] += abs($workingDays);
+                } else {
+                    // Regular leave: deduct credits
+                    $balances['vl'] = max(0, $balances['vl'] - $workingDays);
+                }
             } elseif ($leaveType === 'sl') {
-                $balances['sl'] = max(0, $balances['sl'] - $leave->working_days);
+                if ($leave->is_cancellation ?? false) {
+                    // Cancellation: add credits back (working_days is negative for cancellations)
+                    $balances['sl'] += abs($workingDays);
+                } else {
+                    // Regular leave: deduct credits
+                    $balances['sl'] = max(0, $balances['sl'] - $workingDays);
+                }
             }
         }
 
@@ -322,5 +336,36 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
             'SEL' => 'Special Emergency Leave',
             'STUDY_LEAVE' => 'Study Leave',
         ];
+    }
+    public function processCancellation(Employee $employee, array $cancellationData)
+    {
+        $leaveType = strtolower($cancellationData['leave_type']);
+        $workingDays = $cancellationData['working_days']; // Credits to restore
+        $cancellationDate = $cancellationData['date_filed']; // Date cancellation was filed
+        $effectiveDate = $cancellationData['inclusive_date_start']; // When cancellation takes effect
+
+        // Create a new leave application record for the cancellation
+        // This will appear as a new row in the table
+        $cancellationApplication = LeaveApplication::create([
+            'employee_id' => $employee->id,
+            'leave_type' => $cancellationData['leave_type'],
+            'leave_details' => 'CANCELLED - Credits Restored',
+            'working_days' => -$workingDays, // Negative value to indicate credit restoration
+            'inclusive_date_start' => $effectiveDate,
+            'inclusive_date_end' => $cancellationData['inclusive_date_end'],
+            'date_filed' => $cancellationDate,
+            'commutation' => null,
+            'is_cancellation' => true, // Mark as cancellation entry
+        ]);
+
+        // Recalculate all balances from the effective date onwards
+        $this->recalculateBalancesFromDate($employee, $effectiveDate);
+
+        // For non-VL/SL leave types, add credits back to employee balance
+        if (!in_array($leaveType, ['vl', 'sl'])) {
+            $employee->addLeave($leaveType, $workingDays); // Add credits back
+        }
+
+        return $cancellationApplication;
     }
 }

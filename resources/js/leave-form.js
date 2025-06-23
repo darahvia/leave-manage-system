@@ -3,6 +3,8 @@
 
 // Global variables
 let isEditing = false;
+let isCancelling = false;
+
 let originalFormAction = '';
 
 // DOM Content Loaded - Initialize everything when page loads
@@ -136,6 +138,8 @@ function editLeaveApplication(id, leaveType, dateFiled, startDate, endDate, work
 // Cancel edit
 function cancelEdit() {
     isEditing = false;
+    isCancelling = false;
+
     
     const form = document.getElementById('leave-form');
     const editIdInput = document.getElementById('edit_id');
@@ -148,11 +152,15 @@ function cancelEdit() {
     const formContainer = document.getElementById('leave-form-container');
     const submitBtn = document.getElementById('submit-btn');
     const cancelBtn = document.getElementById('cancel-edit-btn');
+    const isCancellationInput = document.getElementById('is_cancellation');
+
     
     // Reset form
     if (editIdInput) editIdInput.value = '';
     if (methodInput) methodInput.value = 'POST';
     if (form && originalFormAction) form.action = originalFormAction;
+    if (isCancellationInput) isCancellationInput.value = '0';
+
     
     // Clear form fields
     if (leaveTypeSelect) leaveTypeSelect.selectedIndex = 0;
@@ -162,9 +170,16 @@ function cancelEdit() {
     if (workingDaysInput) workingDaysInput.value = '';
     
     // Reset UI
-    if (formContainer) formContainer.classList.remove('editing');
+    if (formContainer) {
+        formContainer.classList.remove('editing');
+        formContainer.classList.remove('cancelling');
+    }
     if (submitBtn) submitBtn.textContent = 'Add Leave';
     if (cancelBtn) cancelBtn.style.display = 'none';
+    
+    // Remove cancellation mode title
+    const cancelTitle = document.getElementById('cancel-mode-title');
+    if (cancelTitle) cancelTitle.remove();
 }
 
 // Employee search functionality
@@ -348,6 +363,65 @@ function deleteRecordWithForm(id, type) {
     }
 }
 
+function cancelLeaveApplication(id, leaveType, startDate, endDate, workingDays) {
+    // Reset any existing edit state
+    cancelEdit();
+    
+    // Set cancellation mode
+    isCancelling = true;
+    
+    const leaveTypeSelect = document.getElementById('leave_type');
+    const dateFiledInput = document.getElementById('date_filed');
+    const startDateInput = document.getElementById('inclusive_date_start');
+    const endDateInput = document.getElementById('inclusive_date_end');
+    const workingDaysInput = document.getElementById('working_days');
+    const formContainer = document.getElementById('leave-form-container');
+    const submitBtn = document.getElementById('submit-btn');
+    const isCancellationInput = document.getElementById('is_cancellation');
+    
+    // Set today's date as default cancellation date
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Populate form fields for cancellation
+    if (leaveTypeSelect) leaveTypeSelect.value = leaveType;
+    if (dateFiledInput) dateFiledInput.value = today; // Default to today, but editable
+    if (startDateInput) startDateInput.value = startDate; // Default to today, but editable
+    if (endDateInput) endDateInput.value = endDate; // Default to today, but editable
+    if (workingDaysInput) workingDaysInput.value = workingDays; // Credits to add back
+    if (isCancellationInput) isCancellationInput.value = '1';
+    
+    // Update UI to indicate cancellation mode
+    if (formContainer) formContainer.classList.add('cancelling');
+    if (submitBtn) submitBtn.textContent = 'Cancel Leave (Add Credits Back)';
+    
+    // Make working days field editable for cancellation
+    if (workingDaysInput) {
+        workingDaysInput.removeAttribute('readonly');
+        workingDaysInput.style.backgroundColor = '#fff';
+    }
+    
+    // Add a visual indicator
+    const formTitle = document.createElement('div');
+    formTitle.id = 'cancel-mode-title';
+    formTitle.style.cssText = 'background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold;';
+    formTitle.innerHTML = '⚠️ CANCELLATION MODE: This will add back ' + workingDays + ' ' + leaveType + ' credits';
+    
+    // Remove any existing title
+    const existingTitle = document.getElementById('cancel-mode-title');
+    if (existingTitle) existingTitle.remove();
+    
+    // Add title to form
+    if (formContainer) {
+        formContainer.insertBefore(formTitle, formContainer.firstChild);
+    }
+    
+    // Scroll to form
+    const form = document.getElementById('leave-form');
+    if (form) {
+        form.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
 window.showOtherCreditsModal = function() {
     document.getElementById('otherCreditsModal').style.display = 'block';
 }
@@ -360,3 +434,5 @@ window.editLeaveApplication = editLeaveApplication;
 window.deleteRecord = deleteRecord;
 window.deleteRecordWithForm = deleteRecordWithForm;
 window.cancelEdit = cancelEdit;
+window.cancelLeaveApplication = cancelLeaveApplication;
+window.isCancelling = () => isCancelling;

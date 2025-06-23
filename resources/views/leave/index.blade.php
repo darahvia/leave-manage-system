@@ -98,7 +98,7 @@
                     <td class="value">{{ $employee->original_appointment ?? '' }}</td>
                     <td class="label">SICK LEAVE BALANCE</td>
                     <td class="value">{{ $latestApp ? $latestApp->current_sl : ($employee->balance_forwarded_sl ?? 0) }}</td>
-                    <td class="label"> VIEW ALL </td>
+                    <td class="label"> VIEW OTHER LEAVE BALANCES </td>
                     <td class="value">
                         <button type="button" id="viewAllBtn" onclick="showOtherCreditsModal()">View All</button>
                     </td>
@@ -239,6 +239,16 @@
                             <td>{{ $app->current_vl ?? '' }}</td>
                             <td>{{ $app->current_sl ?? '' }}</td>
                             <td>
+                                @if(!$app->is_cancellation)
+                                <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, '{{ $app->is_credit_earned ? 'credit' : 'leave' }}')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3,6 5,6 21,6"></polyline>
+                                        <path d="m5,6 1,14c0,1 1,2 2,2h8c1,0 2-1 2-2l1-14"></path>
+                                        <path d="m10,11 0,6"></path>
+                                        <path d="m14,11 0,6"></path>
+                                        <path d="M8,6V4c0-1,1-2,2-2h4c0-1,1-2,2-2v2"></path>
+                                    </svg>
+                                </button>
                                 @if(!$app->is_credit_earned)
                                 <button type="button" class="edit-btn" onclick="editLeaveApplication(
                                     {{ $app->id }},
@@ -253,16 +263,21 @@
                                             <path d="M12 12l7-7 3 3-7 7-3 0 0-3z"></path>
                                         </svg>
                                     </button>
+                                <button type="button" class="cancel-btn" onclick="cancelLeaveApplication(
+                                    {{ $app->id }},
+                                    '{{ $app->leave_type }}',
+                                    '{{ \Carbon\Carbon::parse($app->inclusive_date_start)->format('Y-m-d') }}',
+                                    '{{ \Carbon\Carbon::parse($app->inclusive_date_end)->format('Y-m-d') }}',
+                                    '{{ $app->working_days }}'
+                                    )">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                                            </svg>
+                                        </button>
                                 @endif
-                                <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, '{{ $app->is_credit_earned ? 'credit' : 'leave' }}')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="3,6 5,6 21,6"></polyline>
-                                        <path d="m5,6 1,14c0,1 1,2 2,2h8c1,0 2-1 2-2l1-14"></path>
-                                        <path d="m10,11 0,6"></path>
-                                        <path d="m14,11 0,6"></path>
-                                        <path d="M8,6V4c0-1,1-2,2-2h4c0-1,1-2,2-2v2"></path>
-                                    </svg>
-                                </button>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -281,6 +296,7 @@
                 <input type="hidden" name="employee_id" value="{{ $employee->id }}">
                 <input type="hidden" name="edit_id" id="edit_id" value="">
                 <input type="hidden" name="_method" id="form_method" value="POST">
+                 <input type="hidden" name="is_cancellation" id="is_cancellation" value="0">
                 <div class="emp-form" id="leave-form-container">
                     <label>Leave Type:</label>
                     <select name="leave_type" id="leave_type" required>
