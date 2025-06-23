@@ -19,7 +19,7 @@ class LeaveService
 
         // For new applications, check if employee has sufficient leave balance
         if (!$leaveApplication && !$this->hasSufficientBalance($employee, $leaveType, $workingDays, $leaveDate)) {
-            throw new \Exception("Insufficient {$leaveType} balance. Available: " . 
+            throw new \Exception("Insufficient {$leaveType} balance. Available: " .
                 $this->getAvailableBalanceAtDate($employee, $leaveType, $leaveDate) . " days");
         }
 
@@ -48,76 +48,191 @@ class LeaveService
             ]);
         }
 
-        // Recalculate all balances for this employee from the affected date onwards
-        $this->recalculateBalancesFromDate($employee, $leaveDate);
-
-        // Update employee balances for non-VL/SL leave types
-        if (!in_array($leaveType, ['vl', 'sl'])) {
-            $employee->deductLeave($leaveType, $workingDays);
-        }
+        // Handle different leave type deductions
+        $this->processLeaveDeductions($employee, $leaveType, $workingDays, $leaveDate);
 
         return $leaveApplication;
     }
 
-/**
- * Recalculate all VL/SL balances from a specific date onwards
- */
-private function recalculateBalancesFromDate(Employee $employee, $fromDate)
-{
-    // Get all leave applications (including credits) from the specified date onwards
-    $leaves = LeaveApplication::where('employee_id', $employee->id)
-        ->where(function($query) use ($fromDate) {
-            $query->whereDate('inclusive_date_start', '>=', $fromDate)
-                  ->orWhereDate('earned_date', '>=', $fromDate);
-        })
-        ->get()
-        ->sortBy(function($leave) {
-            // Create a sortable date - use the earliest relevant date for each record
-            $dates = array_filter([
-                $leave->inclusive_date_start,
-                $leave->earned_date,
-                $leave->date_filed
-            ]);
-            
-            if (empty($dates)) {
-                return now(); // fallback if no dates
-            }
-            
-            $earliestDate = min($dates);
-            
-            // Return a combination of date and ID for consistent sorting
-            return $earliestDate . '-' . str_pad($leave->id, 10, '0', STR_PAD_LEFT);
-        });
-
-    // Get the balance just before this date
-    $balances = $this->getBalancesBeforeDate($employee, $fromDate);
-
-    // Recalculate each leave application's current_vl and current_sl
-    foreach ($leaves as $leave) {
-        if ($leave->is_credit_earned) {
-            // Add earned credits
-            $balances['vl'] += $leave->earned_vl ?? 1.25;
-            $balances['sl'] += $leave->earned_sl ?? 1.25;
-        } else {
-            // Deduct leave
-            $leaveType = strtolower($leave->leave_type);
-            if ($leaveType === 'vl') {
-                $balances['vl'] = max(0, $balances['vl'] - $leave->working_days);
-            } elseif ($leaveType === 'sl') {
-                $balances['sl'] = max(0, $balances['sl'] - $leave->working_days);
-            }
+    /**
+     * Process leave deductions based on leave type
+     */
+    private function processLeaveDeductions(Employee $employee, string $leaveType, int $workingDays, $leaveDate)
+    {
+        switch ($leaveType) {
+            case 'vl':
+                // Recalculate VL balances from the affected date onwards
+                $this->recalculateBalancesFromDate($employee, $leaveDate);
+                break;
+                
+            case 'sl':
+                // Recalculate SL balances from the affected date onwards
+                $this->recalculateBalancesFromDate($employee, $leaveDate);
+                break;
+                
+            case 'spl':
+                // Deduct from SPL balance
+                $employee->deductLeave('spl', $workingDays);
+                break;
+                
+            case 'fl':
+                // Force Leave: Deduct from both FL and VL
+                $employee->deductLeave('fl', $workingDays);
+                // Also recalculate VL balances since FL affects VL too
+                $this->recalculateBalancesFromDate($employee, $leaveDate);
+                break;
+                
+            case 'solo_parent':
+            case 'solo parent':
+                $employee->deductLeave('solo_parent', $workingDays);
+                break;
+                
+            case 'ml':
+                $employee->deductLeave('ml', $workingDays);
+                break;
+                
+            case 'pl':
+                $employee->deductLeave('pl', $workingDays);
+                break;
+                
+            case 'ra9710':
+                $employee->deductLeave('ra9710', $workingDays);
+                break;
+                
+            case 'rl':
+                $employee->deductLeave('rl', $workingDays);
+                break;
+                
+            case 'sel':
+                $employee->deductLeave('sel', $workingDays);
+                break;
+                
+            case 'study_leave':
+                $employee->deductLeave('study_leave', $workingDays);
+                break;
+                
+            default:
+                // Handle other leave types or throw exception
+                throw new \Exception("Unknown leave type: {$leaveType}");
         }
-
-        // Update the leave application with new balances
-        $leave->update([
-            'current_vl' => $balances['vl'],
-            'current_sl' => $balances['sl'],
-        ]);
     }
-}
 
     /**
-     * Get VL/SL balances just before a specific date 
+     * Deduct from current VL balance (for Force Leave)
+     */
+    private function deductFromCurrentVL(Employee $employee, int $workingDays)
+    {
+        $latestApplication = $employee->leaveApplications()
+            ->orderBy('inclusive_date_start', 'desc')
+            ->orderBy('earned_date', 'desc')
+            ->orderBy('date_filed', 'desc')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($latestApplication) {
+            $currentVL = max(0, $latestApplication->current_vl - $workingDays);
+            $latestApplication->update(['current_vl' => $currentVL]);
+        }
+    }
+
+    /**
+     * Enhanced balance checking with proper validations
+     */
+    private function hasSufficientBalance(Employee $employee, string $leaveType, int $workingDays, $atDate = null)
+    {
+        $availableBalance = $atDate
+            ? $this->getAvailableBalanceAtDate($employee, $leaveType, $atDate)
+            : $this->getAvailableBalance($employee, $leaveType);
+        
+        // Special case for Force Leave - check both FL and VL balances
+        if ($leaveType === 'fl') {
+            $flBalance = $employee->getCurrentLeaveBalance('fl');
+            $vlBalance = $atDate 
+                ? $this->getAvailableBalanceAtDate($employee, 'vl', $atDate)
+                : $this->getAvailableBalance($employee, 'vl');
+            
+            return ($flBalance >= $workingDays) && ($vlBalance >= $workingDays);
+        }
+        
+        return $availableBalance >= $workingDays;
+    }
+
+    /**
+     * Get available balance for a specific leave type at a specific date
+     */
+    private function getAvailableBalanceAtDate(Employee $employee, string $leaveType, $atDate)
+    {
+        if (in_array($leaveType, ['vl', 'sl'])) {
+            $balances = $this->getBalancesBeforeDate($employee, $atDate);
+            return $balances[$leaveType] ?? 0;
+        }
+
+        // For other leave types, use current balance from employee model
+        return $employee->getCurrentLeaveBalance($leaveType);
+    }
+
+    /**
+     * Recalculate all VL/SL balances from a specific date onwards
+     */
+    private function recalculateBalancesFromDate(Employee $employee, $fromDate)
+    {
+        // Get all leave applications (including credits) from the specified date onwards
+        $leaves = LeaveApplication::where('employee_id', $employee->id)
+            ->where(function($query) use ($fromDate) {
+                $query->whereDate('inclusive_date_start', '>=', $fromDate)
+                      ->orWhereDate('earned_date', '>=', $fromDate);
+            })
+            ->get()
+            ->sortBy(function($leave) {
+                // Create a sortable date - use the earliest relevant date for each record
+                $dates = array_filter([
+                    $leave->inclusive_date_start,
+                    $leave->earned_date,
+                    $leave->date_filed
+                ]);
+               
+                if (empty($dates)) {
+                    return now(); // fallback if no dates
+                }
+               
+                $earliestDate = min($dates);
+               
+                // Return a combination of date and ID for consistent sorting
+                return $earliestDate . '-' . str_pad($leave->id, 10, '0', STR_PAD_LEFT);
+            });
+
+        // Get the balance just before this date
+        $balances = $this->getBalancesBeforeDate($employee, $fromDate);
+
+        // Recalculate each leave application's current_vl and current_sl
+        foreach ($leaves as $leave) {
+            if ($leave->is_credit_earned) {
+                // Add earned credits
+                $balances['vl'] += $leave->earned_vl ?? 1.25;
+                $balances['sl'] += $leave->earned_sl ?? 1.25;
+            } else {
+                // Deduct leave
+                $leaveType = strtolower($leave->leave_type);
+                if ($leaveType === 'vl') {
+                    $balances['vl'] = max(0, $balances['vl'] - $leave->working_days);
+                } elseif ($leaveType === 'sl') {
+                    $balances['sl'] = max(0, $balances['sl'] - $leave->working_days);
+                } elseif ($leaveType === 'fl') {
+                    // Force Leave also deducts from VL
+                    $balances['vl'] = max(0, $balances['vl'] - $leave->working_days);
+                }
+            }
+
+            // Update the leave application with new balances
+            $leave->update([
+                'current_vl' => $balances['vl'],
+                'current_sl' => $balances['sl'],
+            ]);
+        }
+    }
+
+    /**
+     * Get VL/SL balances just before a specific date
      */
     private function getBalancesBeforeDate(Employee $employee, $beforeDate)
     {
@@ -135,11 +250,11 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
                     $leave->earned_date,
                     $leave->date_filed
                 ]);
-                
+               
                 if (empty($dates)) {
                     return '1900-01-01'; // very early date for records with no dates
                 }
-                
+               
                 $earliestDate = min($dates);
                 return $earliestDate . '-' . str_pad($leave->id, 10, '0', STR_PAD_LEFT);
             });
@@ -161,6 +276,9 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
                     $balances['vl'] = max(0, $balances['vl'] - $leave->working_days);
                 } elseif ($leaveType === 'sl') {
                     $balances['sl'] = max(0, $balances['sl'] - $leave->working_days);
+                } elseif ($leaveType === 'fl') {
+                    // Force Leave also deducts from VL
+                    $balances['vl'] = max(0, $balances['vl'] - $leave->working_days);
                 }
             }
         }
@@ -169,38 +287,12 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
     }
 
     /**
-     * Get available balance for a specific leave type at a specific date
-     */
-    private function getAvailableBalanceAtDate(Employee $employee, string $leaveType, $atDate)
-    {
-        if (in_array($leaveType, ['vl', 'sl'])) {
-            $balances = $this->getBalancesBeforeDate($employee, $atDate);
-            return $balances[$leaveType] ?? 0;
-        }
-
-        // For other leave types, use current balance from employee model
-        return $employee->getCurrentLeaveBalance($leaveType);
-    }
-
-    /**
-     * Check if employee has sufficient leave balance at a specific date
-     */
-    private function hasSufficientBalance(Employee $employee, string $leaveType, int $workingDays, $atDate = null)
-    {
-        $availableBalance = $atDate 
-            ? $this->getAvailableBalanceAtDate($employee, $leaveType, $atDate)
-            : $this->getAvailableBalance($employee, $leaveType);
-            
-        return $availableBalance >= $workingDays;
-    }
-
-    /**
      * Get balance before a specific leave (for editing purposes)
      */
     public function getBalanceBeforeLeave(Employee $employee, LeaveApplication $leaveToEdit, $type = 'vl')
     {
         $leaveDate = $leaveToEdit->inclusive_date_start ?? $leaveToEdit->date_filed;
-        
+       
         // Get all leave applications before this one (by date, not ID)
         $leaves = LeaveApplication::where('employee_id', $employee->id)
             ->where('id', '!=', $leaveToEdit->id) // Exclude the leave being edited
@@ -227,6 +319,9 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
             } else {
                 $leaveType = strtolower($leave->leave_type);
                 if ($leaveType === $type) {
+                    $balance -= $leave->working_days ?? 0;
+                } elseif ($leaveType === 'fl' && $type === 'vl') {
+                    // Force Leave also deducts from VL
                     $balance -= $leave->working_days ?? 0;
                 }
             }
@@ -296,12 +391,59 @@ private function recalculateBalancesFromDate(Employee $employee, $fromDate)
     {
         $employee = $leaveApplication->employee;
         $leaveDate = $leaveApplication->inclusive_date_start ?? $leaveApplication->earned_date ?? $leaveApplication->date_filed;
+        $leaveType = strtolower($leaveApplication->leave_type ?? '');
+        $workingDays = $leaveApplication->working_days ?? 0;
         
+        // If it's a non-VL/SL leave type, restore the balance back to employee model
+        if (!in_array($leaveType, ['vl', 'sl']) && !$leaveApplication->is_credit_earned) {
+            $this->restoreLeaveBalance($employee, $leaveType, $workingDays);
+        }
+       
         // Delete the leave application
         $leaveApplication->delete();
+       
+        // Recalculate VL/SL balances from this date onwards
+        if (in_array($leaveType, ['vl', 'sl', 'fl']) || $leaveApplication->is_credit_earned) {
+            $this->recalculateBalancesFromDate($employee, $leaveDate);
+        }
+    }
+
+    /**
+     * Restore leave balance when deleting a leave application
+     */
+    private function restoreLeaveBalance(Employee $employee, string $leaveType, int $workingDays)
+    {
+        switch ($leaveType) {
+            case 'spl':
+                $employee->spl = ($employee->spl ?? 0) + $workingDays;
+                break;
+            case 'fl':
+                $employee->fl = ($employee->fl ?? 0) + $workingDays;
+                break;
+            case 'solo_parent':
+                $employee->solo_parent = ($employee->solo_parent ?? 0) + $workingDays;
+                break;
+            case 'ml':
+                $employee->ml = ($employee->ml ?? 0) + $workingDays;
+                break;
+            case 'pl':
+                $employee->pl = ($employee->pl ?? 0) + $workingDays;
+                break;
+            case 'ra9710':
+                $employee->ra9710 = ($employee->ra9710 ?? 0) + $workingDays;
+                break;
+            case 'rl':
+                $employee->rl = ($employee->rl ?? 0) + $workingDays;
+                break;
+            case 'sel':
+                $employee->sel = ($employee->sel ?? 0) + $workingDays;
+                break;
+            case 'study_leave':
+                $employee->study_leave = ($employee->study_leave ?? 0) + $workingDays;
+                break;
+        }
         
-        // Recalculate balances from this date onwards
-        $this->recalculateBalancesFromDate($employee, $leaveDate);
+        $employee->save();
     }
 
     /**
