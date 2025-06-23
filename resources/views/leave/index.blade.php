@@ -287,13 +287,36 @@
                     <button type="submit">Add Credits Earned</button>
                 </div>
             </form>
+            <form method="POST" action="{{ route('leave.otherCredits') }}">
+                @csrf
+                <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                <div class="emp-form">
+                    <label>Leave Type:</label>
+                    <select name="leave_type" required>
+                        <option value="spl">Special Privilege Leave</option>
+                        <option value="fl">Forced Leave</option>
+                        <option value="solo_parent">Solo Parent Leave</option>
+                        <option value="ml">Maternity Leave</option>
+                        <option value="pl">Paternity Leave</option>
+                        <option value="ra9710">RA9710 Leave</option>
+                        <option value="rl">Rehabilitation Leave</option>
+                        <option value="sel">Special Emergency Leave</option>
+                        <option value="study_leave">Study Leave</option>
+                    </select>
+
+                    <label>Credits to Add:</label>
+                    <input type="number" name="credits" step="0.01" required>
+
+                    <button type="submit">Add Other Credits</button>
+                </div>
+            </form>
         </div>
     @endif
 
    <!-- External Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
-    <!-- Pass Laravel routes to JavaScript -->
+    <!-- Pass Laravegitl routes to JavaScript -->
     <script>
         // Make Laravel routes available to JavaScript
         window.autocompleteRoute = '{{ route("employee.autocomplete") }}';

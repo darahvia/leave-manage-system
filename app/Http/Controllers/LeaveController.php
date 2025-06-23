@@ -108,7 +108,7 @@ class LeaveController extends Controller
                 ]);
 
                 // You might want to recalculate balances here if needed
-                // $this->leaveService->recalculateBalances($request->employee_id);
+                $this->leaveService->recalculateBalances($request->employee_id);
 
                 return back()->with('success', 'Leave application updated successfully.');
                 
