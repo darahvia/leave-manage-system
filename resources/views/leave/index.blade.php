@@ -1,4 +1,3 @@
-{{-- filepath: resources/views/leave/index.blade.php --}}
 <!DOCTYPE html>
 <html>
 <head>
@@ -7,36 +6,48 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
-    @if(session('success'))
-        <div class="success">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="error">{{ session('error') }}</div>
-    @endif
-
-
-    <!-- Top: Search and Add Employee Icon -->
-    <div class="top-section">
-        <form method="POST" action="{{ route('employee.find') }}" class="search-form" autocomplete="off">
-            @csrf
-            <div class="emp-form">
-                <input type="text" name="name" id="employee-search" autocomplete="off" required>
-                <div id="suggestions"></div>
-                <button type="submit" class="search-btn">Search</button>
+<div class="header-wrapper">
+    <div class="header-container">
+        <img src="/images/deped-logo.png" alt="DepEd Logo" class="header-logo">
+        <div class="header-text">
+            <div class="header-title">
+                <span class="dep">Dep</span><span class="ed">Ed</span> Cadiz City
             </div>
-        </form>
-        <button class="icon-btn-square" id="showAddEmpModal" title="Add Employee">
-            &#43; <!-- plus icon -->
-        </button>
+            <div class="header-subtitle">Leave Credit System</div>
+        </div>
+        <img src="/images/deped-cadiz-logo.png" alt="Division Logo" class="header-logo">
     </div>
 
-    <!-- Add Employee Modal -->
+    <div class="search-bar-section">
+        <form method="POST" action="{{ route('employee.find') }}" class="search-form" autocomplete="off">
+            @csrf
+            <div class="search-box">
+                <button type="submit" class="search-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
+                <input type="text" name="name" id="employee-search" required placeholder="Find Employee...">
+            </div>
+        </form>
+        <button class="add-employee-btn" id="showAddEmpModal">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Add Employee</span>
+        </button>
+    </div>
+</div>
+
     <div class="modal-bg" id="addEmpModal">
         <div class="modal-content">
             <button class="close" id="closeAddEmpModal">&times;</button>
             <form method="POST" action="{{ route('employee.add') }}">
                 @csrf
                 <div class="emp-form">
+                    <div class="form-left">
                     <label>Surname:</label>
                     <input type="text" name="surname" required>
                     <label>Given name:</label>
@@ -47,6 +58,9 @@
                     <input type="text" name="division" required>
                     <label>Designation:</label>
                     <input type="text" name="designation" required>
+                    </div>
+
+                    <div class="form-right">
                     <label>Original Appointment:</label>
                     <input type="text" name="original_appointment">
                     <label>Salary:</label>
@@ -57,13 +71,13 @@
                     <label>Sick Leave Forwarded Balance:</label>
                     <input type="number" step="0.01" name="balance_forwarded_sl" required>
                     <button type="submit">Add Employee</button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
 
-    <!-- Employee Details Table -->
     @if($employee)
         @php
             $latestApp = $employee->leaveApplications->last();
@@ -106,6 +120,7 @@
             </table>
         </div>
 
+
         <!-- Modal for Other Credits -->
         <div class="modal-bg" id="otherCreditsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:999;">
             <div class="modal-content" style="background:#fff; margin:5% auto; padding:20px; border-radius:8px; max-width:400px; position:relative;">
@@ -128,7 +143,6 @@
     @endif
 
 
-    <!-- Leave Records Table -->
     @if($employee)
         <table class="leave-table">
             <thead>
@@ -152,24 +166,23 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- BALANCE FORWARDED -->
                 <tr>
-                    <td>BALANCE FORWARDED (from last year)</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>{{ number_format($employee->balance_forwarded_vl, 2) }}</td>
-                    <td>{{ number_format($employee->balance_forwarded_sl, 2) }}</td>
-                    <td></td>
+                    <td data-label="PERIOD">BALANCE FORWARDED (from last year)</td>
+                    <td data-label="VL EARNED"></td>
+                    <td data-label="SL EARNED"></td>
+                    <td data-label="DATE LEAVE FILED"></td>
+                    <td data-label="DATE LEAVE INCURRED"></td>
+                    <td data-label="LEAVE INCURRED"></td>
+                    <td data-label="VL"></td>
+                    <td data-label="SL"></td>
+                    <td data-label="SPL"></td>
+                    <td data-label="FL"></td>
+                    <td data-label="SOLO PARENT"></td>
+                    <td data-label="OTHERS"></td>
+                    <td data-label="REMARKS"></td>
+                    <td data-label="VL BALANCE">{{ number_format($employee->balance_forwarded_vl, 2) }}</td>
+                    <td data-label="SL BALANCE">{{ number_format($employee->balance_forwarded_sl, 2) }}</td>
+                    <td data-label="ACTIONS"></td>
                 </tr>
                 @if($employee->leaveApplications && $employee->leaveApplications->count())
                 @foreach($employee->leaveApplications->sortBy([
@@ -177,60 +190,71 @@
                     'date_filed'
                 ]) as $app)
                         <tr>
-                            <td>{{ $app->earned_date ? \Carbon\Carbon::parse($app->earned_date)->format('F j, Y') : '' }}</td>
-                            <td>
+                            <td data-label="PERIOD">{{ $app->earned_date ? \Carbon\Carbon::parse($app->earned_date)->format('F j, Y') : '' }}</td>
+                            <td data-label="VL EARNED">
                                 @if($app->is_credit_earned)
                                     @if($app->leave_type === 'VL' || !$app->leave_type)
                                         {{ $app->earned_vl ?? '1.25' }}
                                     @endif
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="SL EARNED">
                                 @if($app->is_credit_earned)
                                     @if($app->leave_type === 'SL' || !$app->leave_type)
                                         {{ $app->earned_sl ?? '1.25' }}
                                     @endif
                                 @endif
                             </td>
-                            <td>{{ $app->date_filed ? \Carbon\Carbon::parse($app->date_filed)->format('F j, Y') : '' }}</td>
-                            <td>
+                            <td data-label="DATE LEAVE FILED">{{ $app->date_filed ? \Carbon\Carbon::parse($app->date_filed)->format('F j, Y') : '' }}</td>
+                            <td data-label="DATE LEAVE INCURRED">
                                 @if($app->inclusive_date_start && $app->inclusive_date_end)
                                     {{ \Carbon\Carbon::parse($app->inclusive_date_start)->format('F j, Y') }} - {{ \Carbon\Carbon::parse($app->inclusive_date_end)->format('F j, Y') }}
                                 @elseif($app->date_incurred)
                                     {{ \Carbon\Carbon::parse($app->date_incurred)->format('F j, Y') }}
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="LEAVE INCURRED">
                                 @if(!$app->is_credit_earned)
                                     {{ \App\Services\LeaveService::getLeaveTypes()[$app->leave_type] ?? $app->leave_type }}
                                 @endif
                             </td>
-
+                            <td data-label="VL">
                             <td>
                                 @if(!$app->is_credit_earned && $app->leave_type === 'VL')
                                     {{ $app->working_days ?? '' }}
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="SL">
                                 @if(!$app->is_credit_earned && $app->leave_type === 'SL')
                                     {{ $app->working_days ?? '' }}
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="SPL">
                                 @if(!$app->is_credit_earned && $app->leave_type === 'SPL')
                                     {{ $app->working_days ?? '' }}
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="FL">
                                 @if(!$app->is_credit_earned && $app->leave_type === 'FL')
                                     {{ $app->working_days ?? '' }}
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="SOLO PARENT">
                                 @if(!$app->is_credit_earned && $app->leave_type === 'SOLO PARENT')
                                     {{ $app->working_days ?? '' }}
                                 @endif
                             </td>
+                            <td data-label="OTHERS">
+                                @if(!$app->is_credit_earned && $app->leave_type === 'OTHERS')
+                                    {{ $app->working_days ?? '' }}
+                                @endif
+                            </td>
+                            <td data-label="REMARKS"></td>
+                            <td data-label="VL BALANCE">{{ $app->current_vl ?? '' }}</td>
+                            <td data-label="SL BALANCE">{{ $app->current_sl ?? '' }}</td>
+                            <td data-label="ACTIONS">
+                                @if(!$app->is_cancellation)
+                                <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, '{{ $app->is_credit_earned ? 'credit' : 'leave' }}')">
                             @php
                                 $otherLeaveTypes = ['ML', 'PL', 'RA9710', 'RL', 'SEL', 'STUDY_LEAVE', 'ADOPT'];
                             @endphp
@@ -247,6 +271,7 @@
                             <td>{{ $app->current_vl ?? '' }}</td>
                             <td>{{ $app->current_sl ?? '' }}</td>
                             <td>
+   
                                 @if ($app->is_credit_earned)
                                     {{-- Credits earned → Only delete --}}
                                     <button type="button" class="delete-btn" onclick="deleteRecord({{ $app->id }}, 'credit')">
@@ -313,6 +338,7 @@
                                             </svg>
                                     </button>
                                 @endif
+     
                             </td>
 
                         </tr>
@@ -323,16 +349,14 @@
     @endif
 
 
-    <!-- Bottom: Add Leave Type and Add Earned Credits -->
     @if($employee)
         <div class="bottom-section">
-            <!-- Add Leave Type -->
             <form method="POST" action="{{ route('leave.submit') }}" id="leave-form" class="leave-form">
                 @csrf
                 <input type="hidden" name="employee_id" value="{{ $employee->id }}">
                 <input type="hidden" name="edit_id" id="edit_id" value="">
                 <input type="hidden" name="_method" id="form_method" value="POST">
-                 <input type="hidden" name="is_cancellation" id="is_cancellation" value="0">
+                   <input type="hidden" name="is_cancellation" id="is_cancellation" value="0">
                 <div class="emp-form" id="leave-form-container">
                     <label>Leave Type:</label>
                     <select name="leave_type" class="form-control" required>
@@ -355,9 +379,8 @@
                     <input type="text" name="leave_details" id="leave_details">
                     <button type="submit" id="submit-btn">Add Leave</button>
                     <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" style="display: none; margin-left: 10px; background-color: #6c757d;">Cancel</button>
-            </div>                
+                </div>
             </form>
-            <!-- Add Earned Credits -->
             <form method="POST" action="{{ route('leave.credits') }}">
                 @csrf
                 <input type="hidden" name="employee_id" value="{{ $employee->id }}">
@@ -389,10 +412,8 @@
         </div>
     @endif
 
-   <!-- External Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
-    <!-- Pass Laravegitl routes to JavaScript -->
     <script>
         // Make Laravel routes available to JavaScript
         window.autocompleteRoute = '{{ route("employee.autocomplete") }}';
@@ -401,8 +422,6 @@
         window.csrfToken = '{{ csrf_token() }}'; // Add this line
     </script>
     
-    <!-- Include the external JavaScript file -->
     @vite(['resources/js/leave-form.js'])
-
 </body>
 </html>>
