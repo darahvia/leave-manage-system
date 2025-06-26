@@ -6,11 +6,33 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
+    <!-- Tab Navigation -->
+    <div class="tab-nav" style="margin-bottom: 1.5rem;">
+        <a href="{{ route('leave.index') }}{{ $employee ? '?employee_id=' . $employee->id : '' }}" class="tab-link{{ request()->routeIs('leave.index') ? ' active' : '' }}">Leave</a>
+        <a href="{{ route('cto.index') }}{{ $employee ? '?employee_id=' . $employee->id : '' }}" class="tab-link{{ request()->routeIs('cto.index') ? ' active' : '' }}">CTO</a>
+    </div>
+    <style>
+        .tab-nav {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 1.5rem;
+        }
+        .tab-link {
+            padding: 0.5rem 1.5rem;
+            text-decoration: none;
+            color: #333;
+            border-bottom: 2px solid transparent;
+            transition: border 0.2s, color 0.2s;
+        }
+        .tab-link.active, .tab-link:hover {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+        }
+    </style>
+
     @if(session('success'))
         <div class="success">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="error">{{ session('error') }}</div>
     @endif
     <div class="header-wrapper">
         <div class="header-container">
@@ -27,6 +49,7 @@
         <div class="search-bar-section">
             <form method="POST" action="{{ route('employee.find') }}" class="search-form" autocomplete="off">
                 @csrf
+                <input type="hidden" name="redirect_to" value="leave">
                 <div class="search-box">
                     <button type="submit" class="search-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

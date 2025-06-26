@@ -810,3 +810,124 @@ body > *:not(.header-wrapper) {
         background: var(--white);
     }
 }
+
+/* General tab navigation container styling */
+.tab-nav {
+    display: flex; /* Arranges links in a row */
+    padding: 10px 0; /* Vertical padding for the tab area */
+    background-color: #f8f9fa; /* Light background for the tab bar */
+    border-bottom: 1px solid #dee2e6; /* Separator line below tabs */
+    margin-bottom: 1.5rem; /* Matches your inline style */
+}
+
+/* Styling for individual tab links */
+.tab-link {
+    padding: 10px 20px; /* Padding around the text */
+    text-decoration: none; /* Remove default underline */
+    color: #007bff; /* Default link color (could be #333 or similar for inactive) */
+    font-weight: normal; /* Default font weight */
+    border-bottom: 3px solid transparent; /* Space for the active underline */
+    transition: all 0.3s ease-in-out; /* Smooth transition for hover/active states */
+}
+
+/* Hover state for tab links */
+.tab-link:hover {
+    color: #0056b3; /* Darker blue on hover */
+    border-bottom-color: #a0d4ff; /* Lighter blue underline on hover */
+}
+
+/* Active state for the currently selected tab */
+.tab-link.active {
+    color: #007bff; /* Active text color - can be the same as default or darker */
+    font-weight: bold; /* Make active tab text bold */
+    border-bottom-color: #007bff; /* Strong blue underline for active tab */
+    background-color: #e9ecef; /* Slightly different background for active tab */
+    border-radius: 5px 5px 0 0; /* Rounded top corners for the active tab */
+}
+
+/* Adjustments for the header text if needed, ensuring consistency */
+.header-title {
+    font-size: 2.5rem; /* Example size, adjust as needed */
+    font-weight: 700;
+    color: #fff; /* Assuming white text on blue header */
+}
+
+.header-title .dep {
+    color: #d1e7dd; /* Lighter shade of green for 'Dep' */
+}
+
+.header-title .ed {
+    color: #fff; /* White for 'Ed' */
+}
+
+.header-subtitle {
+    font-size: 1.2rem; /* Example size */
+    color: #e0e0e0; /* Lighter color for subtitle */
+}
+
+/* Styling for CTO records table rows based on status */
+
+/* Styling for CTO records table rows based on status */
+
+/* Ensure the main table border and header borders are black from your original inline styles or here */
+.cto-table {
+    border: 2px solid #000 !important; /* Ensure main table border is black */
+    border-collapse: collapse; /* Ensure collapse is set */
+}
+.cto-table th {
+    border: 1px solid #000 !important; /* Ensure header cell borders are black */
+    text-align: center;
+    font-weight: bold;
+}
+.cto-table thead tr {
+    background-color: #90EE90; /* Keep your header background color */
+}
+
+
+/* Red for Expired CTO Credits */
+.cto-expired {
+    background-color: #ffe0e0; /* Light red background for the row */
+    color: #cc0000; /* All text in the expired row is red */
+    font-weight: bold; 
+}
+.cto-expired td {
+    border: 1px solid #000 !important; /* All individual cell borders within this row are black */
+    /* text-decoration: line-through; Optional: uncomment to strikethrough all text in expired rows */
+}
+
+
+/* Green for Valid, Non-Expired CTO Credits with Remaining Balance */
+.cto-valid-credit {
+    background-color: #e0ffe0; /* Light green background for the row */
+    color: #000000; /* All text in this row is black */
+}
+.cto-valid-credit td {
+    border: 1px solid #000 !important; /* All individual cell borders within this row are black */
+}
+
+/* Orange/Yellow for Absences (CTO Usage) */
+.cto-absence {
+    background-color: #fff8e1; /* Light yellow background for the row */
+    color: #000000; /* All text in this row is black */
+}
+.cto-absence td {
+    border: 1px solid #000 !important; /* All individual cell borders within this row are black */
+}
+
+/* Optional: Styling for fully consumed credits that are not expired */
+.cto-fully-consumed {
+    background-color: #e6e6e6; /* Light grey background for the row */
+    color: #000000; /* All text in this row is black */
+    font-style: italic; /* Slightly deemphasize */
+}
+.cto-fully-consumed td {
+    border: 1px solid #000 !important; /* All individual cell borders within this row are black */
+}
+
+/* General table cell styling (if not already defined and needed for non-categorized rows) */
+.cto-table tbody td {
+    padding: 8px;
+    text-align: center;
+    /* Ensure any default borders from here are overridden by the more specific rules above */
+    /* If you have a default border on all td, this is where it might conflict without !important */
+}
