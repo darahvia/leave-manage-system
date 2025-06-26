@@ -1,12 +1,15 @@
 <?php
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+
 
 class Employee extends Model
 {
     use HasFactory;
+
 
     protected $fillable = [
         'surname', 'given_name', 'middle_name', 'division', 'designation', 'original_appointment',
@@ -16,6 +19,7 @@ class Employee extends Model
         'salary' // Add salary to fillable if not already there
     ];
 
+
     public function leaveApplications()
     {
         return $this->hasMany(LeaveApplication::class);
@@ -24,6 +28,7 @@ class Employee extends Model
     public function getCurrentLeaveBalance($leaveType)
     {
         $lastApplication = $this->leaveApplications()->latest()->first();
+
 
         switch (strtolower($leaveType)) {
             case 'vl':
@@ -54,6 +59,7 @@ class Employee extends Model
                 return 0;
         }
     }
+
 
     /**
      * Deduct leave days from the appropriate leave type
@@ -96,6 +102,7 @@ class Employee extends Model
         $this->save();
     }
 
+
     /**
      * Add leave credits to the appropriate leave type
      */
@@ -135,5 +142,33 @@ class Employee extends Model
         }
        
         $this->save();
+    }
+
+
+    // Add this to your existing Employee model
+
+
+/**
+ * Relationship with CTO Applications
+ */
+    public function ctoApplications()
+    {
+        return $this->hasMany(CtoApplication::class);
+    }
+
+
+    /**
+     * Get current CTO balance
+     */
+    public function getCurrentCtoBalance()
+    {
+        $latestRecord = $this->ctoApplications()
+            ->orderBy('date_of_activity_start', 'desc')
+            ->orderBy('date_of_absence_start', 'desc')
+            ->orderBy('id', 'desc')
+            ->first();
+
+
+        return $latestRecord ? $latestRecord->balance : 0;
     }
 }
