@@ -111,6 +111,9 @@ class LeaveService
             case 'study_leave':
                 $employee->deductLeave('study_leave', $workingDays);
                 break;
+            case 'vawc':
+                $employee->deductLeave('vawc', $workingDays);
+                break;
                 
             default:
                 // Handle other leave types or throw exception
@@ -369,6 +372,8 @@ class LeaveService
             'rl' => $employee->rl,
             'sel' => $employee->sel,
             'study_leave' => $employee->study_leave,
+            'vawc' => $employee->vawc,
+
         ];
     }
 
@@ -455,6 +460,9 @@ class LeaveService
                 break;
             case 'study_leave':
                 $employee->study_leave = ($employee->study_leave ?? 0) + $workingDays;
+                break;
+            case 'vawc':
+                $employee->vawc = ($employee->vawc ?? 0) + $workingDays;
                 break;
         }
         

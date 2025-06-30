@@ -326,7 +326,7 @@
                                 @endif
                             </td>
                             @php
-                                $otherLeaveTypes = ['ML', 'PL', 'RA9710', 'RL', 'SEL', 'STUDY_LEAVE', 'ADOPT'];
+                                $otherLeaveTypes = ['ML', 'PL', 'RA9710', 'RL', 'SEL', 'STUDY_LEAVE', 'ADOPT', 'VAWC'];
                             @endphp
                             <td data-label="OTHERS">
                                 @if (in_array($app->leave_type, $otherLeaveTypes))

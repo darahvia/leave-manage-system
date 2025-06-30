@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('division');
             $table->string('designation');
             $table->string('original_appointment')->nullable();
+            $table->string('salary')->nullable();
             $table->integer('vl');
             $table->integer('sl');
             $table->integer('spl');

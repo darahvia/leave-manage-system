@@ -27,7 +27,7 @@ class LeaveController extends Controller
             $employee = Employee::find($request->employee_id);
         }
 
-        return view('leave.index', compact('employee', 'leaveTypes'));
+        return view('leave.employee.index', compact('employee', 'leaveTypes'));
     }
 
     public function addEmployee(Request $request)
@@ -55,6 +55,7 @@ class LeaveController extends Controller
         $employeeData['rl'] = $employeeData['rl'] ?? 0;
         $employeeData['sel'] = $employeeData['sel'] ?? 0;
         $employeeData['study_leave'] = $employeeData['study_leave'] ?? 0;
+        $employeeData['vawc'] = $employeeData['vawc'] ?? 0;
         $employeeData['adopt'] = $employeeData['adopt'] ?? 0;
 
         $employee = Employee::create($employeeData);
@@ -71,10 +72,10 @@ class LeaveController extends Controller
                 ->first();
 
             if ($employee) {
-                return redirect()->route('leave.index', ['employee_id' => $employee->id]);
+                return redirect()->route('leave.employee.index', ['employee_id' => $employee->id]);
             }
 
-            return redirect()->route('leave.index')
+            return redirect()->route('leave.employee.index')
                 ->with('error', '❌ Employee not found.');
         }
 
@@ -104,7 +105,7 @@ class LeaveController extends Controller
                     
                     $leaveTypeName = LeaveService::getLeaveTypes()[$request->leave_type] ?? $request->leave_type;
                     
-                    return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                    return redirect()->route('leave.employee.index', ['employee_id' => $request->employee_id])
                         ->with('success', "✅ {$leaveTypeName} cancellation processed! {$request->working_days} credits restored.");
                 } else {
                     // Handle regular leave application
@@ -115,12 +116,12 @@ class LeaveController extends Controller
 
                     $leaveTypeName = LeaveService::getLeaveTypes()[$request->leave_type] ?? $request->leave_type;
                     
-                    return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                    return redirect()->route('leave.employee.index', ['employee_id' => $request->employee_id])
                         ->with('success', "✅ {$leaveTypeName} application submitted successfully!");
                 }
 
             } catch (\Exception $e) {
-                return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                return redirect()->route('leave.employee.index', ['employee_id' => $request->employee_id])
                     ->with('error', '❌ ' . $e->getMessage());
             }
         }
@@ -213,11 +214,11 @@ class LeaveController extends Controller
                     1.25  // SL credits
                 );
 
-                return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                return redirect()->route('leave.employee.index', ['employee_id' => $request->employee_id])
                     ->with('success', '✅ Leave credits added successfully!');
 
             } catch (\Exception $e) {
-                return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                return redirect()->route('leave.employee.index', ['employee_id' => $request->employee_id])
                     ->with('error', '❌ ' . $e->getMessage());
             }
         }
@@ -236,7 +237,7 @@ class LeaveController extends Controller
                 $credits = $request->credits;
 
                 if (!in_array($leaveType, [
-                    'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave', 'adopt'
+                    'spl', 'fl', 'solo_parent', 'ml', 'pl', 'ra9710', 'rl', 'sel', 'study_leave', 'vawc', 'adopt'
                 ])) {
                     throw new \Exception('Invalid leave type.');
                 }
@@ -244,11 +245,11 @@ class LeaveController extends Controller
                 $employee->{$leaveType} += $credits;
                 $employee->save();
 
-                return redirect()->route('leave.index', ['employee_id' => $employee->id])
+                return redirect()->route('leave.employee.index', ['employee_id' => $employee->id])
                     ->with('success', '✅ Other leave credits added successfully!');
                     
             } catch (\Exception $e) {
-                return redirect()->route('leave.index', ['employee_id' => $request->employee_id])
+                return redirect()->route('leave.employee.index', ['employee_id' => $request->employee_id])
                     ->with('error', '❌ ' . $e->getMessage());
             }
         }
